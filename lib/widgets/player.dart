@@ -37,14 +37,14 @@ class PlayerWidget {
       </div>
       <div class="player-center">
         <div class="controls">
-          <button id="btn-prev">⏮</button>
-          <button id="btn-play" class="play-pause-circle">${state.isPlaying ? '⏸' : '▶'}</button>
-          <button id="btn-next">⏭</button>
+          <button id="btn-prev" title="Previous Track">⏮</button>
+          <button id="btn-play" class="play-pause-circle" title="${state.isPlaying ? 'Pause' : 'Play'}">${state.isPlaying ? '⏸' : '▶'}</button>
+          <button id="btn-next" title="Next Track">⏭</button>
         </div>
         <div class="progress-container">
-          <span class="time-label">1:12</span>
+          <span class="time-label">${state.formattedCurrentTime}</span>
           <div class="progress-bar">
-            <div class="progress" style="width: ${state.currentProgress}%"></div>
+            <div class="progress" style="width: ${state.currentProgressPercent}%"></div>
           </div>
           <span class="time-label">${song.formattedDuration}</span>
         </div>
@@ -55,8 +55,15 @@ class PlayerWidget {
     '''.toJS;
     
     player.querySelector('#btn-play')?.onClick.listen((_) {
-      state.isPlaying = !state.isPlaying;
-      state.notifyListeners();
+      state.togglePlayPause();
+    });
+
+    player.querySelector('#btn-next')?.onClick.listen((_) {
+      state.nextSong();
+    });
+
+    player.querySelector('#btn-prev')?.onClick.listen((_) {
+      state.prevSong();
     });
 
     player.querySelector('.player-like-btn')?.onClick.listen((_) {

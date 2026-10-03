@@ -42,6 +42,7 @@ class SearchScreen {
         card.onClick.listen((_) {
           state.currentSong = song;
           state.isPlaying = true;
+          state.currentSecondsElapsed = 0;
           state.notifyListeners();
         });
         resultsContainer.append(card);

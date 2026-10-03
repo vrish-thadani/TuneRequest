@@ -128,6 +128,11 @@ void updateHeader(web.HTMLDivElement topBar) {
       backBtn.classList.remove('enabled');
     }
   }
+
+  final ticker = topBar.querySelector('.live-event-ticker');
+  if (ticker != null) {
+    ticker.innerHTML = '🔴 LIVE STAGE: <strong>${AppState().selectedEvent?.name ?? 'Mood Indigo'}</strong> (${AppState().selectedEvent?.listenerCount ?? 3400} active listeners)'.toJS;
+  }
 }
 
 void updateSidebar(web.HTMLDivElement sidebar) {

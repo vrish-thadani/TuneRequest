@@ -72,6 +72,7 @@ class HomeScreen {
       card.querySelector('.img-wrapper')?.onClick.listen((_) {
         state.currentSong = song;
         state.isPlaying = true;
+        state.currentSecondsElapsed = 0;
         state.notifyListeners();
       });
 

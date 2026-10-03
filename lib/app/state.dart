@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import '../models/song.dart';
 import '../models/playlist.dart';
@@ -28,13 +29,82 @@ class AppState {
   List<Song> recentlyPlayed = [allSongs[0], allSongs[1], allSongs[2]];
   
   bool isPlaying = true;
-  int currentProgress = 35;
+  int currentSecondsElapsed = 72; // 1:12 elapsed
+  Timer? playbackTimer;
+  Timer? liveTickerTimer;
 
   static final AppState _instance = AppState._internal();
   factory AppState() => _instance;
 
   AppState._internal() {
     refreshFromStorage();
+    _startPlaybackTimer();
+    _startLiveTickerTimer();
+  }
+
+  void _startPlaybackTimer() {
+    playbackTimer?.cancel();
+    playbackTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (isPlaying && currentSong != null) {
+        currentSecondsElapsed++;
+        if (currentSecondsElapsed >= currentSong!.duration) {
+          nextSong();
+        } else {
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  void _startLiveTickerTimer() {
+    liveTickerTimer?.cancel();
+    liveTickerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (selectedEvent != null) {
+        // Dynamic simulated live attendee fluctuation (+/- 3 listeners)
+        final delta = (DateTime.now().second % 7) - 3;
+        selectedEvent!.listenerCount = (selectedEvent!.listenerCount + delta).clamp(100, 50000);
+        notifyListeners();
+      }
+    });
+  }
+
+  int get currentProgressPercent {
+    if (currentSong == null || currentSong!.duration == 0) return 0;
+    return ((currentSecondsElapsed / currentSong!.duration) * 100).clamp(0, 100).round();
+  }
+
+  String get formattedCurrentTime {
+    final mins = currentSecondsElapsed ~/ 60;
+    final secs = (currentSecondsElapsed % 60).toString().padLeft(2, '0');
+    return '$mins:$secs';
+  }
+
+  void togglePlayPause() {
+    isPlaying = !isPlaying;
+    notifyListeners();
+  }
+
+  void nextSong() {
+    if (currentSong == null) return;
+    final currentIndex = allSongs.indexWhere((s) => s.id == currentSong!.id);
+    final nextIndex = (currentIndex + 1) % allSongs.length;
+    currentSong = allSongs[nextIndex];
+    currentSecondsElapsed = 0;
+    isPlaying = true;
+    if (!recentlyPlayed.contains(currentSong)) {
+      recentlyPlayed.insert(0, currentSong!);
+    }
+    notifyListeners();
+  }
+
+  void prevSong() {
+    if (currentSong == null) return;
+    final currentIndex = allSongs.indexWhere((s) => s.id == currentSong!.id);
+    final prevIndex = (currentIndex - 1 + allSongs.length) % allSongs.length;
+    currentSong = allSongs[prevIndex];
+    currentSecondsElapsed = 0;
+    isPlaying = true;
+    notifyListeners();
   }
 
   void refreshFromStorage() {

@@ -284,9 +284,6 @@
         throw A.wrapException(A.RangeError$range($length, 0, 4294967295, "length", null));
       return J.JSArray_JSArray$markFixed(new Array($length), $E);
     },
-    JSArray_JSArray$growable($length, $E) {
-      return A._setArrayType(new Array($length), $E._eval$1("JSArray<0>"));
-    },
     JSArray_JSArray$markFixed(allocation, $E) {
       var t1 = A._setArrayType(allocation, $E._eval$1("JSArray<0>"));
       t1.$flags = 1;
@@ -496,6 +493,16 @@
   },
   A = {JS_CONST: function JS_CONST() {
     },
+    SystemHash_combine(hash, value) {
+      hash = hash + value & 536870911;
+      hash = hash + ((hash & 524287) << 10) & 536870911;
+      return hash ^ hash >>> 6;
+    },
+    SystemHash_finish(hash) {
+      hash = hash + ((hash & 67108863) << 3) & 536870911;
+      hash ^= hash >>> 11;
+      return hash + ((hash & 16383) << 15) & 536870911;
+    },
     checkNotNullable(value, $name, $T) {
       return value;
     },
@@ -511,6 +518,8 @@
     },
     LateError: function LateError(t0) {
       this._message = t0;
+    },
+    SentinelValue: function SentinelValue() {
     },
     EfficientLengthIterable: function EfficientLengthIterable() {
     },
@@ -628,6 +637,39 @@
       }
       throw A.wrapException(A.RangeError$range(charCode, 0, 1114111, null, null));
     },
+    Primitives_lazyAsJsDate(receiver) {
+      if (receiver.date === void 0)
+        receiver.date = new Date(receiver._value);
+      return receiver.date;
+    },
+    Primitives_getYear(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getFullYear() + 0;
+      return t1;
+    },
+    Primitives_getMonth(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getMonth() + 1;
+      return t1;
+    },
+    Primitives_getDay(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getDate() + 0;
+      return t1;
+    },
+    Primitives_getHours(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getHours() + 0;
+      return t1;
+    },
+    Primitives_getMinutes(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getMinutes() + 0;
+      return t1;
+    },
+    Primitives_getSeconds(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getSeconds() + 0;
+      return t1;
+    },
+    Primitives_getMilliseconds(receiver) {
+      var t1 = A.Primitives_lazyAsJsDate(receiver).getMilliseconds() + 0;
+      return t1;
+    },
     Primitives_extractStackTrace(error) {
       var jsError = error.$thrownJsError;
       if (jsError == null)
@@ -646,7 +688,10 @@
       $length = A._asInt(J.get$length$asx(indexable));
       if (index < 0 || index >= $length)
         return A.IndexError$withLength(index, $length, indexable, _s5_);
-      return new A.RangeError(null, null, true, index, _s5_, "Value not in range");
+      return A.RangeError$value(index, _s5_);
+    },
+    argumentErrorValue(object) {
+      return new A.ArgumentError(true, object, null, null);
     },
     wrapException(ex) {
       return A.initializeExceptionWrapper(ex, new Error());
@@ -2862,9 +2907,17 @@
       type$.void_Function._as(callback);
       A._TimerImpl$(0, callback);
     },
+    Timer__createPeriodicTimer(duration, callback) {
+      return A._TimerImpl$periodic(duration._duration / 1000 | 0, callback);
+    },
     _TimerImpl$(milliseconds, callback) {
-      var t1 = new A._TimerImpl();
+      var t1 = new A._TimerImpl(true);
       t1._TimerImpl$2(milliseconds, callback);
+      return t1;
+    },
+    _TimerImpl$periodic(milliseconds, callback) {
+      var t1 = new A._TimerImpl(false);
+      t1._TimerImpl$periodic$2(milliseconds, callback);
       return t1;
     },
     AsyncError_defaultStackTrace(error) {
@@ -3063,6 +3116,12 @@
           $._lastCallback = entry;
       }
     },
+    Timer_Timer$periodic(duration, callback) {
+      var t1 = $.Zone__current;
+      if (t1 === B.C__RootZone)
+        return A.Timer__createPeriodicTimer(duration, type$.void_Function_Timer._as(callback));
+      return A.Timer__createPeriodicTimer(duration, type$.void_Function_Timer._as(t1.bindUnaryCallbackGuarded$1$1(callback, type$.Timer)));
+    },
     _rootHandleError(error, stackTrace) {
       A._schedulePriorityAsyncCallback(new A._rootHandleError_closure(error, stackTrace));
     },
@@ -3130,11 +3189,21 @@
     _AsyncRun__scheduleImmediateWithSetImmediate_internalCallback: function _AsyncRun__scheduleImmediateWithSetImmediate_internalCallback(t0) {
       this.callback = t0;
     },
-    _TimerImpl: function _TimerImpl() {
+    _TimerImpl: function _TimerImpl(t0) {
+      this._once = t0;
+      this._handle = null;
+      this._tick = 0;
     },
     _TimerImpl_internalCallback: function _TimerImpl_internalCallback(t0, t1) {
       this.$this = t0;
       this.callback = t1;
+    },
+    _TimerImpl$periodic_closure: function _TimerImpl$periodic_closure(t0, t1, t2, t3) {
+      var _ = this;
+      _.$this = t0;
+      _.milliseconds = t1;
+      _.start = t2;
+      _.callback = t3;
     },
     AsyncError: function AsyncError(t0, t1) {
       this.error = t0;
@@ -3358,9 +3427,9 @@
     },
     List_List$filled($length, fill, growable, $E) {
       var i,
-        result = growable ? J.JSArray_JSArray$growable($length, $E) : J.JSArray_JSArray$fixed($length, $E);
+        result = J.JSArray_JSArray$fixed($length, $E);
       if ($length !== 0 && fill != null)
-        for (i = 0; i < result.length; ++i)
+        for (i = 0; i < $length; ++i)
           result[i] = fill;
       return result;
     },
@@ -3396,6 +3465,29 @@
     StackTrace_current() {
       return A.getTraceFromException(new Error());
     },
+    DateTime__fourDigits(n) {
+      var absN = Math.abs(n),
+        sign = n < 0 ? "-" : "";
+      if (absN >= 1000)
+        return "" + n;
+      if (absN >= 100)
+        return sign + "0" + absN;
+      if (absN >= 10)
+        return sign + "00" + absN;
+      return sign + "000" + absN;
+    },
+    DateTime__threeDigits(n) {
+      if (n >= 100)
+        return "" + n;
+      if (n >= 10)
+        return "0" + n;
+      return "00" + n;
+    },
+    DateTime__twoDigits(n) {
+      if (n >= 10)
+        return "" + n;
+      return "0" + n;
+    },
     Error_safeToString(object) {
       if (typeof object == "number" || A._isBool(object) || object == null)
         return J.toString$0$(object);
@@ -3417,6 +3509,9 @@
     ArgumentError$value(value, $name, message) {
       return new A.ArgumentError(true, value, $name, message);
     },
+    RangeError$value(value, $name) {
+      return new A.RangeError(null, null, true, value, $name, "Value not in range");
+    },
     RangeError$range(invalidValue, minValue, maxValue, $name, message) {
       return new A.RangeError(minValue, maxValue, true, invalidValue, $name, "Invalid value");
     },
@@ -3429,6 +3524,9 @@
         return end;
       }
       return $length;
+    },
+    RangeError_checkNotNegative(value, $name) {
+      return value;
     },
     IndexError$withLength(invalidValue, $length, indexable, $name) {
       return new A.IndexError($length, true, invalidValue, $name, "Index out of range");
@@ -3560,8 +3658,22 @@
       B.JSArray_methods.add$1(parts, penultimateString);
       B.JSArray_methods.add$1(parts, ultimateString);
     },
+    Object_hash(object1, object2) {
+      var t1 = B.JSInt_methods.get$hashCode(object1);
+      object2 = B.JSInt_methods.get$hashCode(object2);
+      object2 = A.SystemHash_finish(A.SystemHash_combine(A.SystemHash_combine($.$get$_hashSeed(), t1), object2));
+      return object2;
+    },
     print(object) {
       A.printString(object);
+    },
+    DateTime: function DateTime(t0, t1, t2) {
+      this._value = t0;
+      this._microsecond = t1;
+      this.isUtc = t2;
+    },
+    Duration: function Duration(t0) {
+      this._duration = t0;
     },
     Error: function Error() {
     },
@@ -3641,7 +3753,21 @@
       _.followedArtists = t7;
       _.recentlyPlayed = t8;
       _.isPlaying = true;
+      _.currentSecondsElapsed = 72;
+      _.liveTickerTimer = _.playbackTimer = null;
       _.listeners = t9;
+    },
+    AppState__startPlaybackTimer_closure: function AppState__startPlaybackTimer_closure(t0) {
+      this.$this = t0;
+    },
+    AppState__startLiveTickerTimer_closure: function AppState__startLiveTickerTimer_closure(t0) {
+      this.$this = t0;
+    },
+    AppState_nextSong_closure: function AppState_nextSong_closure(t0) {
+      this.$this = t0;
+    },
+    AppState_prevSong_closure: function AppState_prevSong_closure(t0) {
+      this.$this = t0;
     },
     AppState_refreshFromStorage_closure: function AppState_refreshFromStorage_closure() {
     },
@@ -3682,7 +3808,7 @@
       A.initUI();
     },
     initUI() {
-      var topBar, t2, t3, mainLayout, $sidebar, $content, quickItems, i, item, _s5_ = "click",
+      var topBar, t2, t3, t4, mainLayout, $sidebar, $content, quickItems, i, item, _s5_ = "click",
         t1 = init.G,
         appContainer = A._asJSObjectQ(A._asJSObject(t1.document).querySelector("#app"));
       if (appContainer == null)
@@ -3692,7 +3818,8 @@
       topBar.className = "top-header-bar";
       t2 = $.$get$AppState__instance();
       t3 = t2.selectedEvent;
-      topBar.innerHTML = '    <div class="header-left">\n      <button class="nav-btn" id="btn-back" title="Go Back">\u25c0</button>\n      <div class="logo">TuneRequest <span class="badge">LIVE</span></div>\n    </div>\n    <div class="header-center">\n      <div class="live-event-ticker">\n        \ud83d\udd34 LIVE STAGE: <strong>' + t3.name + "</strong> (" + t3.listenerCount + ' active listeners)\n      </div>\n    </div>\n    <div class="header-right">\n      <div class="user-profile">\ud83d\udc64 ' + A.S(t2.username) + "</div>\n    </div>\n  ";
+      t4 = t3.listenerCount;
+      topBar.innerHTML = '    <div class="header-left">\n      <button class="nav-btn" id="btn-back" title="Go Back">\u25c0</button>\n      <div class="logo">TuneRequest <span class="badge">LIVE</span></div>\n    </div>\n    <div class="header-center">\n      <div class="live-event-ticker">\n        \ud83d\udd34 LIVE STAGE: <strong>' + t3.name + "</strong> (" + t4 + ' active listeners)\n      </div>\n    </div>\n    <div class="header-right">\n      <div class="user-profile">\ud83d\udc64 ' + A.S(t2.username) + "</div>\n    </div>\n  ";
       mainLayout = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
       mainLayout.className = "app-layout";
       $sidebar = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
@@ -3894,7 +4021,7 @@
       _.timestamp = t4;
     },
     EventsScreen_render() {
-      var state, t2, t3, t4, grid, _i, $event, card, t5, isSelected, t6,
+      var state, t2, t3, t4, grid, _i, $event, card, t5, isSelected, t6, t7,
         t1 = init.G,
         div = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
       div.className = "events-screen";
@@ -3916,12 +4043,13 @@
         card.className = "event-card";
         t5 = state.selectedEvent;
         isSelected = t5.id === $event.id;
-        t5 = isSelected ? "active-event" : "";
-        t6 = isSelected ? "\u2713 Connected to Stage" : "\u26a1 Join Stage Queue";
-        card.innerHTML = '        <img src="' + $event.bannerImage + '" class="event-banner" onerror="this.src=\'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80\'">\n        <div class="event-body">\n          <span class="category-pill">' + $event.category + '</span>\n          <div class="event-title">' + $event.name + '</div>\n          <div class="event-meta">\ud83d\udccd ' + $event.location + " \u2022 \ud83d\udcc5 " + $event.date + " (" + $event.time + ')</div>\n          <div class="event-meta">\ud83c\udfa7 Host: ' + $event.host + '</div>\n          <div class="event-meta">\ud83d\udc65 ' + $event.listenerCount + ' Listeners active</div>\n          <button class="primary-btn join-event-btn ' + t5 + '">\n            ' + t6 + "\n          </button>\n        </div>\n      ";
-        t6 = A._asJSObjectQ(card.querySelector(".join-event-btn"));
-        if (t6 != null)
-          A._EventStreamSubscription$(t6, "click", t4._as(new A.EventsScreen_render_closure0(state, $event)), false, t2);
+        t5 = $event.listenerCount;
+        t6 = isSelected ? "active-event" : "";
+        t7 = isSelected ? "\u2713 Connected to Stage" : "\u26a1 Join Stage Queue";
+        card.innerHTML = '        <img src="' + $event.bannerImage + '" class="event-banner" onerror="this.src=\'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80\'">\n        <div class="event-body">\n          <span class="category-pill">' + $event.category + '</span>\n          <div class="event-title">' + $event.name + '</div>\n          <div class="event-meta">\ud83d\udccd ' + $event.location + " \u2022 \ud83d\udcc5 " + $event.date + " (" + $event.time + ')</div>\n          <div class="event-meta">\ud83c\udfa7 Host: ' + $event.host + '</div>\n          <div class="event-meta">\ud83d\udc65 ' + t5 + ' Listeners active</div>\n          <button class="primary-btn join-event-btn ' + t6 + '">\n            ' + t7 + "\n          </button>\n        </div>\n      ";
+        t7 = A._asJSObjectQ(card.querySelector(".join-event-btn"));
+        if (t7 != null)
+          A._EventStreamSubscription$(t7, "click", t4._as(new A.EventsScreen_render_closure0(state, $event)), false, t2);
         grid.append(card);
       }
       return div;
@@ -3934,7 +4062,7 @@
       this.event = t1;
     },
     HomeScreen_render() {
-      var state, t2, t3, t4, t5, songsGrid, _i, song, card, isLiked, t6, t7, t8, playlistGrid, playlist, isSaved, _s5_ = "click",
+      var state, t2, t3, t4, t5, t6, songsGrid, _i, song, card, isLiked, t7, t8, t9, playlistGrid, playlist, isSaved, _s5_ = "click",
         t1 = init.G,
         div = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
       div.className = "home-screen";
@@ -3943,7 +4071,8 @@
       t3 = state.username;
       t4 = state.selectedEvent;
       t5 = t4.name;
-      div.innerHTML = string$.x20_____ + t2 + "\n        <h1>Welcome Back, " + A.S(t3) + ' \ud83d\udc4b</h1>\n      </div>\n\n      <!-- Featured Live Event Banner -->\n      <div class="hero-event-banner">\n        <div class="banner-tag">\ud83d\udd25 ACTIVE COMMUNITY EVENT</div>\n        <h2>' + t5 + "</h2>\n        <p>Host: " + t4.host + " \u2022 \ud83d\udc65 " + t4.listenerCount + ' Live Attendees</p>\n        <button class="primary-btn" id="hero-join-btn">\u26a1 Join Stage Queue & Request Track</button>\n      </div>\n\n      <!-- Popular Songs Section -->\n      <div class="section-container">\n        <div class="section-header">\n          <h2>Trending Tracks Across Stages</h2>\n          <span class="sub-text">12 Songs Available</span>\n        </div>\n        <div class="song-grid" id="home-songs"></div>\n      </div>\n\n      <!-- Featured Playlists -->\n      <div class="section-container">\n        <div class="section-header">\n          <h2>Popular Community Playlists</h2>\n        </div>\n        <div class="playlist-grid" id="home-playlists"></div>\n      </div>\n    ';
+      t6 = t4.listenerCount;
+      div.innerHTML = string$.x20_____ + t2 + "\n        <h1>Welcome Back, " + A.S(t3) + ' \ud83d\udc4b</h1>\n      </div>\n\n      <!-- Featured Live Event Banner -->\n      <div class="hero-event-banner">\n        <div class="banner-tag">\ud83d\udd25 ACTIVE COMMUNITY EVENT</div>\n        <h2>' + t5 + "</h2>\n        <p>Host: " + t4.host + " \u2022 \ud83d\udc65 " + t6 + ' Live Attendees</p>\n        <button class="primary-btn" id="hero-join-btn">\u26a1 Join Stage Queue & Request Track</button>\n      </div>\n\n      <!-- Popular Songs Section -->\n      <div class="section-container">\n        <div class="section-header">\n          <h2>Trending Tracks Across Stages</h2>\n          <span class="sub-text">12 Songs Available</span>\n        </div>\n        <div class="song-grid" id="home-songs"></div>\n      </div>\n\n      <!-- Featured Playlists -->\n      <div class="section-container">\n        <div class="section-header">\n          <h2>Popular Community Playlists</h2>\n        </div>\n        <div class="playlist-grid" id="home-playlists"></div>\n      </div>\n    ';
       t2 = A._asJSObjectQ(div.querySelector("#home-back-btn"));
       if (t2 != null) {
         t3 = type$._ElementEventStreamImpl_JSObject;
@@ -3957,47 +4086,47 @@
       songsGrid = A._asJSObjectQ(div.querySelector("#home-songs"));
       if (songsGrid == null)
         songsGrid = A._asJSObject(songsGrid);
-      for (t2 = $.$get$allSongs(), t3 = type$._ElementEventStreamImpl_JSObject, t4 = t3._eval$1("~(1)?"), t3 = t3._precomputed1, t5 = state.likedSongs, _i = 0; _i < 12; ++_i) {
+      for (t2 = $.$get$allSongs(), t3 = t2.length, t4 = type$._ElementEventStreamImpl_JSObject, t5 = t4._eval$1("~(1)?"), t4 = t4._precomputed1, t6 = state.likedSongs, _i = 0; _i < t2.length; t2.length === t3 || (0, A.throwConcurrentModificationError)(t2), ++_i) {
         song = t2[_i];
         card = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
         card.className = "song-card";
-        isLiked = B.JSArray_methods.contains$1(t5, song);
-        t6 = song.title;
-        t7 = isLiked ? "active" : "";
-        t8 = isLiked ? "\u2764\ufe0f" : "\ud83e\udd0d";
-        card.innerHTML = '        <div class="img-wrapper">\n          <img src="' + song.coverImage + '" alt="' + t6 + '" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80\'">\n          <button class="play-overlay-btn">\u25b6</button>\n        </div>\n        <div class="song-meta">\n          <div class="title" title="' + t6 + '">' + t6 + '</div>\n          <div class="artist">' + song.artist + '</div>\n          <div class="genre-tag">' + song.genre + '</div>\n        </div>\n        <div class="card-actions">\n          <button class="icon-btn like-btn ' + t7 + '">' + t8 + '</button>\n          <button class="icon-btn req-btn" title="Request for Live Stage">\u26a1 Request</button>\n        </div>\n      ';
-        t8 = A._asJSObjectQ(card.querySelector(".img-wrapper"));
-        if (t8 != null)
-          A._EventStreamSubscription$(t8, _s5_, t4._as(new A.HomeScreen_render_closure1(state, song)), false, t3);
-        t6 = A._asJSObjectQ(card.querySelector(".like-btn"));
-        if (t6 != null)
-          A._EventStreamSubscription$(t6, _s5_, t4._as(new A.HomeScreen_render_closure2(state, song)), false, t3);
-        t6 = A._asJSObjectQ(card.querySelector(".req-btn"));
-        if (t6 != null)
-          A._EventStreamSubscription$(t6, _s5_, t4._as(new A.HomeScreen_render_closure3(state, song)), false, t3);
+        isLiked = B.JSArray_methods.contains$1(t6, song);
+        t7 = song.title;
+        t8 = isLiked ? "active" : "";
+        t9 = isLiked ? "\u2764\ufe0f" : "\ud83e\udd0d";
+        card.innerHTML = '        <div class="img-wrapper">\n          <img src="' + song.coverImage + '" alt="' + t7 + '" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80\'">\n          <button class="play-overlay-btn">\u25b6</button>\n        </div>\n        <div class="song-meta">\n          <div class="title" title="' + t7 + '">' + t7 + '</div>\n          <div class="artist">' + song.artist + '</div>\n          <div class="genre-tag">' + song.genre + '</div>\n        </div>\n        <div class="card-actions">\n          <button class="icon-btn like-btn ' + t8 + '">' + t9 + '</button>\n          <button class="icon-btn req-btn" title="Request for Live Stage">\u26a1 Request</button>\n        </div>\n      ';
+        t9 = A._asJSObjectQ(card.querySelector(".img-wrapper"));
+        if (t9 != null)
+          A._EventStreamSubscription$(t9, _s5_, t5._as(new A.HomeScreen_render_closure1(state, song)), false, t4);
+        t7 = A._asJSObjectQ(card.querySelector(".like-btn"));
+        if (t7 != null)
+          A._EventStreamSubscription$(t7, _s5_, t5._as(new A.HomeScreen_render_closure2(state, song)), false, t4);
+        t7 = A._asJSObjectQ(card.querySelector(".req-btn"));
+        if (t7 != null)
+          A._EventStreamSubscription$(t7, _s5_, t5._as(new A.HomeScreen_render_closure3(state, song)), false, t4);
         songsGrid.append(card);
       }
       playlistGrid = A._asJSObjectQ(div.querySelector("#home-playlists"));
       if (playlistGrid == null)
         playlistGrid = A._asJSObject(playlistGrid);
-      for (t2 = $.$get$allPlaylists(), t5 = state.savedPlaylists, _i = 0; _i < 3; ++_i) {
+      for (t2 = $.$get$allPlaylists(), t3 = state.savedPlaylists, _i = 0; _i < 3; ++_i) {
         playlist = t2[_i];
         card = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
         card.className = "playlist-card";
-        isSaved = B.JSArray_methods.contains$1(t5, playlist);
+        isSaved = B.JSArray_methods.contains$1(t3, playlist);
         t6 = playlist.name;
         t7 = isSaved ? "saved" : "";
         t8 = isSaved ? "\u2713 Saved" : "+ Save Playlist";
         card.innerHTML = '        <img src="' + playlist.coverImage + '" alt="' + t6 + '" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80\'">\n        <div class="title">' + t6 + '</div>\n        <div class="desc">' + playlist.description + '</div>\n        <button class="save-playlist-btn ' + t7 + '">' + t8 + "</button>\n      ";
         t8 = A._asJSObjectQ(card.querySelector("img"));
         if (t8 != null)
-          A._EventStreamSubscription$(t8, _s5_, t4._as(new A.HomeScreen_render_closure4(state, playlist)), false, t3);
+          A._EventStreamSubscription$(t8, _s5_, t5._as(new A.HomeScreen_render_closure4(state, playlist)), false, t4);
         t6 = A._asJSObjectQ(card.querySelector(".title"));
         if (t6 != null)
-          A._EventStreamSubscription$(t6, _s5_, t4._as(new A.HomeScreen_render_closure5(state, playlist)), false, t3);
+          A._EventStreamSubscription$(t6, _s5_, t5._as(new A.HomeScreen_render_closure5(state, playlist)), false, t4);
         t6 = A._asJSObjectQ(card.querySelector(".save-playlist-btn"));
         if (t6 != null)
-          A._EventStreamSubscription$(t6, _s5_, t4._as(new A.HomeScreen_render_closure6(state, playlist)), false, t3);
+          A._EventStreamSubscription$(t6, _s5_, t5._as(new A.HomeScreen_render_closure6(state, playlist)), false, t4);
         playlistGrid.append(card);
       }
       return div;
@@ -4038,7 +4167,7 @@
       div.className = "library-screen";
       state = $.$get$AppState__instance();
       t1 = state.navigationHistory.length > 1 ? '<button class="back-link-btn" id="lib-back-btn">\u2190 Back</button>' : "";
-      div.innerHTML = string$.x20_____ + t1 + '\n        <h1>\ud83d\udcda My Music Library</h1>\n      </div>\n\n      <div class="library-tabs">\n        <button class="tab-btn active" id="tab-liked">Liked Songs (' + state.likedSongs.length + ')</button>\n        <button class="tab-btn" id="tab-playlists">Saved Playlists (' + state.savedPlaylists.length + ')</button>\n        <button class="tab-btn" id="tab-artists">Followed Artists (' + state.followedArtists.length + ')</button>\n        <button class="tab-btn" id="tab-recent">Recently Played (3)</button>\n      </div>\n\n      <div class="library-content" id="library-content-container"></div>\n    ';
+      div.innerHTML = string$.x20_____ + t1 + '\n        <h1>\ud83d\udcda My Music Library</h1>\n      </div>\n\n      <div class="library-tabs">\n        <button class="tab-btn active" id="tab-liked">Liked Songs (' + state.likedSongs.length + ')</button>\n        <button class="tab-btn" id="tab-playlists">Saved Playlists (' + state.savedPlaylists.length + ')</button>\n        <button class="tab-btn" id="tab-artists">Followed Artists (' + state.followedArtists.length + ')</button>\n        <button class="tab-btn" id="tab-recent">Recently Played (' + state.recentlyPlayed.length + ')</button>\n      </div>\n\n      <div class="library-content" id="library-content-container"></div>\n    ';
       t1 = A._asJSObjectQ(div.querySelector("#lib-back-btn"));
       if (t1 != null) {
         t2 = type$._ElementEventStreamImpl_JSObject;
@@ -4119,7 +4248,7 @@
       this.song = t1;
     },
     LiveQueueScreen_render() {
-      var state, $name, t2, t3, t4, t5, listContainer, _i, req, item, t6, hasVoted, t7, t8, t9, t10, t11, _s5_ = "click",
+      var state, $name, t2, t3, t4, t5, t6, listContainer, _i, req, item, hasVoted, t7, t8, t9, t10, t11, _s5_ = "click",
         t1 = init.G,
         div = A._asJSObject(A._asJSObject(t1.document).createElement("div"));
       div.className = "live-queue-screen";
@@ -4129,13 +4258,14 @@
         $name = "Vrish";
       t2 = state.navigationHistory.length > 1 ? '<button class="back-link-btn" id="queue-back-btn">\u2190 Back</button>' : "";
       t3 = state.selectedEvent;
-      t4 = $.$get$allSongs();
-      t5 = A._arrayInstanceType(t4);
-      div.innerHTML = string$.x20_____ + t2 + '\n        <h1>\u26a1 Live Queue & Upvotes</h1>\n      </div>\n\n      <div class="stage-info-bar">\n        <div class="stage-title">STAGE: ' + t3.name + '</div>\n        <div class="live-pill">\ud83d\udd34 LIVE \u2022 ' + t3.listenerCount + ' ATTENDEES</div>\n      </div>\n\n      <div class="queue-layout">\n        <div class="queue-main">\n          <h2>Current Upvotes & Up Next</h2>\n          <div class="queue-list" id="queue-items-container"></div>\n        </div>\n\n        <div class="queue-sidebar-form">\n          <div class="form-card">\n            <h3>\ud83c\udfb5 Request a Track for DJ</h3>\n            <p>Your request will broadcast live to all crowd members & DJ console.</p>\n            \n            <label>Select Track</label>\n            <select id="request-select" class="form-input">\n              ' + new A.MappedListIterable(t4, t5._eval$1("String(1)")._as(new A.LiveQueueScreen_render_closure()), t5._eval$1("MappedListIterable<1,String>")).join$1(0, "") + '\n            </select>\n\n            <button id="request-btn" class="primary-btn full-width">\ud83d\ude80 Broadcast Request (+1 Vote)</button>\n          </div>\n        </div>\n      </div>\n    ';
-      t5 = A._asJSObjectQ(div.querySelector("#queue-back-btn"));
-      if (t5 != null) {
+      t4 = t3.listenerCount;
+      t5 = $.$get$allSongs();
+      t6 = A._arrayInstanceType(t5);
+      div.innerHTML = string$.x20_____ + t2 + '\n        <h1>\u26a1 Live Queue & Upvotes</h1>\n      </div>\n\n      <div class="stage-info-bar">\n        <div class="stage-title">STAGE: ' + t3.name + '</div>\n        <div class="live-pill">\ud83d\udd34 LIVE \u2022 ' + t4 + ' ATTENDEES</div>\n      </div>\n\n      <div class="queue-layout">\n        <div class="queue-main">\n          <h2>Current Upvotes & Up Next</h2>\n          <div class="queue-list" id="queue-items-container"></div>\n        </div>\n\n        <div class="queue-sidebar-form">\n          <div class="form-card">\n            <h3>\ud83c\udfb5 Request a Track for DJ</h3>\n            <p>Your request will broadcast live to all crowd members & DJ console.</p>\n            \n            <label>Select Track</label>\n            <select id="request-select" class="form-input">\n              ' + new A.MappedListIterable(t5, t6._eval$1("String(1)")._as(new A.LiveQueueScreen_render_closure()), t6._eval$1("MappedListIterable<1,String>")).join$1(0, "") + '\n            </select>\n\n            <button id="request-btn" class="primary-btn full-width">\ud83d\ude80 Broadcast Request (+1 Vote)</button>\n          </div>\n        </div>\n      </div>\n    ';
+      t6 = A._asJSObjectQ(div.querySelector("#queue-back-btn"));
+      if (t6 != null) {
         t2 = type$._ElementEventStreamImpl_JSObject;
-        A._EventStreamSubscription$(t5, _s5_, t2._eval$1("~(1)?")._as(new A.LiveQueueScreen_render_closure0(state)), false, t2._precomputed1);
+        A._EventStreamSubscription$(t6, _s5_, t2._eval$1("~(1)?")._as(new A.LiveQueueScreen_render_closure0(state)), false, t2._precomputed1);
       }
       listContainer = A._asJSObjectQ(div.querySelector("#queue-items-container"));
       if (listContainer == null)
@@ -4342,26 +4472,39 @@
       return player;
     },
     PlayerWidget_updatePlayer(player) {
-      var _s5_ = "click",
+      var t4, _s5_ = "click",
         state = $.$get$AppState__instance(),
         song = state.currentSong,
         t1 = B.JSArray_methods.contains$1(state.likedSongs, song) ? "\u2764\ufe0f" : "\ud83e\udd0d",
-        t2 = state.isPlaying ? "\u23f8" : "\u25b6";
-      player.innerHTML = '      <div class="player-left">\n        <img src="' + song.coverImage + '" alt="Cover" onerror="this.src=\'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80\'">\n        <div class="player-song-meta">\n          <div class="title">' + song.title + '</div>\n          <div class="artist">' + song.artist + '</div>\n        </div>\n        <button class="icon-btn player-like-btn">' + t1 + '</button>\n      </div>\n      <div class="player-center">\n        <div class="controls">\n          <button id="btn-prev">\u23ee</button>\n          <button id="btn-play" class="play-pause-circle">' + t2 + '</button>\n          <button id="btn-next">\u23ed</button>\n        </div>\n        <div class="progress-container">\n          <span class="time-label">1:12</span>\n          <div class="progress-bar">\n            <div class="progress" style="width: 35%"></div>\n          </div>\n          <span class="time-label">' + song.get$formattedDuration() + '</span>\n        </div>\n      </div>\n      <div class="player-right">\n        <button class="secondary-btn req-stage-btn" id="player-req-btn">\u26a1 Request for Live Stage</button>\n      </div>\n    ';
-      t2 = A._asJSObjectQ(player.querySelector("#btn-play"));
-      if (t2 != null) {
+        t2 = state.isPlaying,
+        t3 = t2 ? "Pause" : "Play";
+      t2 = t2 ? "\u23f8" : "\u25b6";
+      t4 = state.currentSecondsElapsed;
+      player.innerHTML = '      <div class="player-left">\n        <img src="' + song.coverImage + '" alt="Cover" onerror="this.src=\'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80\'">\n        <div class="player-song-meta">\n          <div class="title">' + song.title + '</div>\n          <div class="artist">' + song.artist + '</div>\n        </div>\n        <button class="icon-btn player-like-btn">' + t1 + '</button>\n      </div>\n      <div class="player-center">\n        <div class="controls">\n          <button id="btn-prev" title="Previous Track">\u23ee</button>\n          <button id="btn-play" class="play-pause-circle" title="' + t3 + '">' + t2 + '</button>\n          <button id="btn-next" title="Next Track">\u23ed</button>\n        </div>\n        <div class="progress-container">\n          <span class="time-label">' + ("" + B.JSInt_methods._tdivFast$1(t4, 60) + ":" + B.JSString_methods.padLeft$2(B.JSInt_methods.toString$0(B.JSInt_methods.$mod(t4, 60)), 2, "0")) + '</span>\n          <div class="progress-bar">\n            <div class="progress" style="width: ' + state.get$currentProgressPercent() + '%"></div>\n          </div>\n          <span class="time-label">' + song.get$formattedDuration() + '</span>\n        </div>\n      </div>\n      <div class="player-right">\n        <button class="secondary-btn req-stage-btn" id="player-req-btn">\u26a1 Request for Live Stage</button>\n      </div>\n    ';
+      t4 = A._asJSObjectQ(player.querySelector("#btn-play"));
+      if (t4 != null) {
         t1 = type$._ElementEventStreamImpl_JSObject;
-        A._EventStreamSubscription$(t2, _s5_, t1._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure(state)), false, t1._precomputed1);
+        A._EventStreamSubscription$(t4, _s5_, t1._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure(state)), false, t1._precomputed1);
+      }
+      t1 = A._asJSObjectQ(player.querySelector("#btn-next"));
+      if (t1 != null) {
+        t2 = type$._ElementEventStreamImpl_JSObject;
+        A._EventStreamSubscription$(t1, _s5_, t2._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure0(state)), false, t2._precomputed1);
+      }
+      t1 = A._asJSObjectQ(player.querySelector("#btn-prev"));
+      if (t1 != null) {
+        t2 = type$._ElementEventStreamImpl_JSObject;
+        A._EventStreamSubscription$(t1, _s5_, t2._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure1(state)), false, t2._precomputed1);
       }
       t1 = A._asJSObjectQ(player.querySelector(".player-like-btn"));
       if (t1 != null) {
         t2 = type$._ElementEventStreamImpl_JSObject;
-        A._EventStreamSubscription$(t1, _s5_, t2._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure0(state, song)), false, t2._precomputed1);
+        A._EventStreamSubscription$(t1, _s5_, t2._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure2(state, song)), false, t2._precomputed1);
       }
       t1 = A._asJSObjectQ(player.querySelector("#player-req-btn"));
       if (t1 != null) {
         t2 = type$._ElementEventStreamImpl_JSObject;
-        A._EventStreamSubscription$(t1, _s5_, t2._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure1(state, song)), false, t2._precomputed1);
+        A._EventStreamSubscription$(t1, _s5_, t2._eval$1("~(1)?")._as(new A.PlayerWidget_updatePlayer_closure3(state, song)), false, t2._precomputed1);
       }
     },
     PlayerWidget_create_closure: function PlayerWidget_create_closure(t0) {
@@ -4370,11 +4513,17 @@
     PlayerWidget_updatePlayer_closure: function PlayerWidget_updatePlayer_closure(t0) {
       this.state = t0;
     },
-    PlayerWidget_updatePlayer_closure0: function PlayerWidget_updatePlayer_closure0(t0, t1) {
+    PlayerWidget_updatePlayer_closure0: function PlayerWidget_updatePlayer_closure0(t0) {
+      this.state = t0;
+    },
+    PlayerWidget_updatePlayer_closure1: function PlayerWidget_updatePlayer_closure1(t0) {
+      this.state = t0;
+    },
+    PlayerWidget_updatePlayer_closure2: function PlayerWidget_updatePlayer_closure2(t0, t1) {
       this.state = t0;
       this.song = t1;
     },
-    PlayerWidget_updatePlayer_closure1: function PlayerWidget_updatePlayer_closure1(t0, t1) {
+    PlayerWidget_updatePlayer_closure3: function PlayerWidget_updatePlayer_closure3(t0, t1) {
       this.state = t0;
       this.song = t1;
     },
@@ -4667,6 +4816,16 @@
         throw A.wrapException(A.diagnoseIndexError(receiver, index));
       receiver[index] = value;
     },
+    indexWhere$1(receiver, test) {
+      var i;
+      A._arrayInstanceType(receiver)._eval$1("bool(1)")._as(test);
+      if (0 >= receiver.length)
+        return -1;
+      for (i = 0; i < receiver.length; ++i)
+        if (test.call$1(receiver[i]))
+          return i;
+      return -1;
+    },
     $isIterable: 1,
     $isList: 1
   };
@@ -4741,6 +4900,23 @@
     get$isNegative(receiver) {
       return receiver === 0 ? 1 / receiver < 0 : receiver < 0;
     },
+    round$0(receiver) {
+      if (receiver > 0) {
+        if (receiver !== 1 / 0)
+          return Math.round(receiver);
+      } else if (receiver > -1 / 0)
+        return 0 - Math.round(0 - receiver);
+      throw A.wrapException(A.UnsupportedError$("" + receiver + ".round()"));
+    },
+    clamp$2(receiver, lowerLimit, upperLimit) {
+      if (B.JSInt_methods.compareTo$1(lowerLimit, upperLimit) > 0)
+        throw A.wrapException(A.argumentErrorValue(lowerLimit));
+      if (this.compareTo$1(receiver, lowerLimit) < 0)
+        return lowerLimit;
+      if (this.compareTo$1(receiver, upperLimit) > 0)
+        return upperLimit;
+      return receiver;
+    },
     toString$0(receiver) {
       if (receiver === 0 && 1 / receiver < 0)
         return "-0.0";
@@ -4765,6 +4941,12 @@
       if (result > 0)
         return result;
       return result + other;
+    },
+    $tdiv(receiver, other) {
+      if ((receiver | 0) === receiver)
+        if (other >= 1)
+          return receiver / other | 0;
+      return this._tdivSlow$1(receiver, other);
     },
     _tdivFast$1(receiver, other) {
       return (receiver | 0) === receiver ? receiver / other | 0 : this._tdivSlow$1(receiver, other);
@@ -4894,6 +5076,7 @@
       return "LateInitializationError: " + this._message;
     }
   };
+  A.SentinelValue.prototype = {};
   A.EfficientLengthIterable.prototype = {};
   A.ListIterable.prototype = {
     get$iterator(_) {
@@ -5263,19 +5446,19 @@
     call$1(o) {
       return this.getTag(o);
     },
-    $signature: 5
+    $signature: 7
   };
   A.initHooks_closure0.prototype = {
     call$2(o, tag) {
       return this.getUnknownTag(o, tag);
     },
-    $signature: 12
+    $signature: 13
   };
   A.initHooks_closure1.prototype = {
     call$1(tag) {
       return this.prototypeForTag(A._asString(tag));
     },
-    $signature: 13
+    $signature: 14
   };
   A.NativeByteBuffer.prototype = {
     get$runtimeType(receiver) {
@@ -5389,7 +5572,7 @@
       t1.storedCallback = null;
       f.call$0();
     },
-    $signature: 6
+    $signature: 8
   };
   A._AsyncRun__initializeScheduleImmediate_closure.prototype = {
     call$1(callback) {
@@ -5399,33 +5582,72 @@
       t2 = this.span;
       t1.firstChild ? t1.removeChild(t2) : t1.appendChild(t2);
     },
-    $signature: 14
+    $signature: 15
   };
   A._AsyncRun__scheduleImmediateJsOverride_internalCallback.prototype = {
     call$0() {
       this.callback.call$0();
     },
-    $signature: 7
+    $signature: 4
   };
   A._AsyncRun__scheduleImmediateWithSetImmediate_internalCallback.prototype = {
     call$0() {
       this.callback.call$0();
     },
-    $signature: 7
+    $signature: 4
   };
   A._TimerImpl.prototype = {
     _TimerImpl$2(milliseconds, callback) {
       if (self.setTimeout != null)
-        self.setTimeout(A.convertDartClosureToJS(new A._TimerImpl_internalCallback(this, callback), 0), milliseconds);
+        this._handle = self.setTimeout(A.convertDartClosureToJS(new A._TimerImpl_internalCallback(this, callback), 0), milliseconds);
       else
         throw A.wrapException(A.UnsupportedError$("`setTimeout()` not found."));
-    }
+    },
+    _TimerImpl$periodic$2(milliseconds, callback) {
+      if (self.setTimeout != null)
+        this._handle = self.setInterval(A.convertDartClosureToJS(new A._TimerImpl$periodic_closure(this, milliseconds, Date.now(), callback), 0), milliseconds);
+      else
+        throw A.wrapException(A.UnsupportedError$("Periodic timer."));
+    },
+    cancel$0() {
+      if (self.setTimeout != null) {
+        var t1 = this._handle;
+        if (t1 == null)
+          return;
+        if (this._once)
+          self.clearTimeout(t1);
+        else
+          self.clearInterval(t1);
+        this._handle = null;
+      } else
+        throw A.wrapException(A.UnsupportedError$("Canceling a timer."));
+    },
+    $isTimer: 1
   };
   A._TimerImpl_internalCallback.prototype = {
     call$0() {
+      var t1 = this.$this;
+      t1._handle = null;
+      t1._tick = 1;
       this.callback.call$0();
     },
     $signature: 1
+  };
+  A._TimerImpl$periodic_closure.prototype = {
+    call$0() {
+      var duration, _this = this,
+        t1 = _this.$this,
+        tick = t1._tick + 1,
+        t2 = _this.milliseconds;
+      if (t2 > 0) {
+        duration = Date.now() - _this.start;
+        if (duration > (tick + 1) * t2)
+          tick = B.JSInt_methods.$tdiv(duration, t2);
+      }
+      t1._tick = tick;
+      _this.callback.call$1(t1);
+    },
+    $signature: 4
   };
   A.AsyncError.prototype = {
     toString$0(_) {
@@ -5640,7 +5862,7 @@
     call$1(__wc0_formal) {
       this.joinedResult._completeWithResultOf$1(this.originalSource);
     },
-    $signature: 6
+    $signature: 8
   };
   A._Future__propagateToListeners_handleWhenCompleteCallback_closure0.prototype = {
     call$2(e, s) {
@@ -5648,7 +5870,7 @@
       type$.StackTrace._as(s);
       this.joinedResult._completeErrorObject$1(new A.AsyncError(e, s));
     },
-    $signature: 15
+    $signature: 16
   };
   A._Future__propagateToListeners_handleValueCallback.prototype = {
     call$0() {
@@ -5827,7 +6049,7 @@
     call$2(k, v) {
       this.result.$indexSet(0, this.K._as(k), this.V._as(v));
     },
-    $signature: 16
+    $signature: 17
   };
   A.ListBase.prototype = {
     get$iterator(receiver) {
@@ -5886,7 +6108,7 @@
       t2 = A.S(v);
       t1._contents += t2;
     },
-    $signature: 8
+    $signature: 9
   };
   A._JsonMap.prototype = {
     $index(_, key) {
@@ -6229,12 +6451,61 @@
       B.JSArray_methods.$indexSet(t1, t2.i++, key);
       B.JSArray_methods.$indexSet(t1, t2.i++, value);
     },
-    $signature: 8
+    $signature: 9
   };
   A._JsonStringStringifier.prototype = {
     get$_partialResult() {
       var t1 = this._sink._contents;
       return t1.charCodeAt(0) == 0 ? t1 : t1;
+    }
+  };
+  A.DateTime.prototype = {
+    $eq(_, other) {
+      var t1;
+      if (other == null)
+        return false;
+      t1 = false;
+      if (other instanceof A.DateTime)
+        if (this._value === other._value)
+          t1 = this._microsecond === other._microsecond;
+      return t1;
+    },
+    get$hashCode(_) {
+      return A.Object_hash(this._value, this._microsecond);
+    },
+    toString$0(_) {
+      var _this = this,
+        y = A.DateTime__fourDigits(A.Primitives_getYear(_this)),
+        m = A.DateTime__twoDigits(A.Primitives_getMonth(_this)),
+        d = A.DateTime__twoDigits(A.Primitives_getDay(_this)),
+        h = A.DateTime__twoDigits(A.Primitives_getHours(_this)),
+        min = A.DateTime__twoDigits(A.Primitives_getMinutes(_this)),
+        sec = A.DateTime__twoDigits(A.Primitives_getSeconds(_this)),
+        ms = A.DateTime__threeDigits(A.Primitives_getMilliseconds(_this)),
+        t1 = _this._microsecond,
+        us = t1 === 0 ? "" : A.DateTime__threeDigits(t1);
+      return y + "-" + m + "-" + d + " " + h + ":" + min + ":" + sec + "." + ms + us;
+    }
+  };
+  A.Duration.prototype = {
+    $eq(_, other) {
+      if (other == null)
+        return false;
+      return other instanceof A.Duration && this._duration === other._duration;
+    },
+    get$hashCode(_) {
+      return B.JSInt_methods.get$hashCode(this._duration);
+    },
+    toString$0(_) {
+      var minutesPadding, seconds, secondsPadding,
+        microseconds = this._duration,
+        microseconds0 = microseconds % 3600000000,
+        minutes = B.JSInt_methods._tdivFast$1(microseconds0, 60000000);
+      microseconds0 %= 60000000;
+      minutesPadding = minutes < 10 ? "0" : "";
+      seconds = B.JSInt_methods._tdivFast$1(microseconds0, 1000000);
+      secondsPadding = seconds < 10 ? "0" : "";
+      return "" + (microseconds / 3600000000 | 0) + ":" + minutesPadding + minutes + ":" + secondsPadding + seconds + "." + B.JSString_methods.padLeft$2(B.JSInt_methods.toString$0(microseconds0 % 1000000), 6, "0");
     }
   };
   A.Error.prototype = {
@@ -6376,8 +6647,9 @@
       return count;
     },
     elementAt$1(_, index) {
-      var skipCount,
-        iterator = this.get$iterator(this);
+      var iterator, skipCount;
+      A.RangeError_checkNotNegative(index, "index");
+      iterator = this.get$iterator(this);
       for (skipCount = index; iterator.moveNext$0();) {
         if (skipCount === 0)
           return iterator.get$current();
@@ -6431,6 +6703,48 @@
     $isStringSink: 1
   };
   A.AppState.prototype = {
+    _startPlaybackTimer$0() {
+      var t1 = this.playbackTimer;
+      if (t1 != null)
+        t1.cancel$0();
+      this.playbackTimer = A.Timer_Timer$periodic(B.Duration_1000000, new A.AppState__startPlaybackTimer_closure(this));
+    },
+    _startLiveTickerTimer$0() {
+      var t1 = this.liveTickerTimer;
+      if (t1 != null)
+        t1.cancel$0();
+      this.liveTickerTimer = A.Timer_Timer$periodic(B.Duration_4000000, new A.AppState__startLiveTickerTimer_closure(this));
+    },
+    get$currentProgressPercent() {
+      var t1 = this.currentSong.duration;
+      if (t1 === 0)
+        return 0;
+      return B.JSNumber_methods.round$0(B.JSNumber_methods.clamp$2(this.currentSecondsElapsed / t1 * 100, 0, 100));
+    },
+    nextSong$0() {
+      var t2, _this = this,
+        t1 = $.$get$allSongs();
+      t1 = _this.currentSong = t1[B.JSInt_methods.$mod(B.JSArray_methods.indexWhere$1(t1, new A.AppState_nextSong_closure(_this)) + 1, t1.length)];
+      _this.currentSecondsElapsed = 0;
+      _this.isPlaying = true;
+      t2 = _this.recentlyPlayed;
+      if (!B.JSArray_methods.contains$1(t2, t1)) {
+        A._arrayInstanceType(t2)._precomputed1._as(t1);
+        t2.$flags & 1 && A.throwUnsupportedOperation(t2, "insert", 2);
+        t2.splice(0, 0, t1);
+      }
+      _this.notifyListeners$0();
+    },
+    prevSong$0() {
+      var _this = this,
+        t1 = $.$get$allSongs(),
+        currentIndex = B.JSArray_methods.indexWhere$1(t1, new A.AppState_prevSong_closure(_this)),
+        t2 = t1.length;
+      _this.currentSong = t1[B.JSInt_methods.$mod(currentIndex - 1 + t2, t2)];
+      _this.currentSecondsElapsed = 0;
+      _this.isPlaying = true;
+      _this.notifyListeners$0();
+    },
     refreshFromStorage$0() {
       var decoded, t1, exception,
         savedQueueJson = A._asStringQ(A._asJSObject(A._asJSObject(init.G.window).localStorage).getItem("tune_queue_data"));
@@ -6448,9 +6762,16 @@
         this._initDefaultQueue$0();
     },
     _initDefaultQueue$0() {
-      var t1 = $.$get$allSongs(),
-        t2 = type$.JSArray_String;
-      this.queue = A._setArrayType([new A.SongRequest("req1", t1[0], A._setArrayType(["Ayaan", "Rahul"], t2), 2, "2 mins ago"), new A.SongRequest("req2", t1[6], A._setArrayType(["Priya", "Ananya"], t2), 2, "Just now")], type$.JSArray_SongRequest);
+      var t2, t3, t4,
+        t1 = $.$get$allSongs();
+      if (0 >= t1.length)
+        return A.ioore(t1, 0);
+      t2 = t1[0];
+      t3 = type$.JSArray_String;
+      t4 = A._setArrayType(["Ayaan", "Rahul"], t3);
+      if (6 >= t1.length)
+        return A.ioore(t1, 6);
+      this.queue = A._setArrayType([new A.SongRequest("req1", t2, t4, 2, "2 mins ago"), new A.SongRequest("req2", t1[6], A._setArrayType(["Priya", "Ananya"], t3), 2, "Just now")], type$.JSArray_SongRequest);
       this._saveQueueToStorage$0();
     },
     _saveQueueToStorage$0() {
@@ -6567,11 +6888,49 @@
       this.notifyListeners$0();
     }
   };
+  A.AppState__startPlaybackTimer_closure.prototype = {
+    call$1(__wc0_formal) {
+      var t1, t2;
+      type$.Timer._as(__wc0_formal);
+      t1 = this.$this;
+      t2 = t1.isPlaying;
+      if (t2)
+        if (++t1.currentSecondsElapsed >= t1.currentSong.duration)
+          t1.nextSong$0();
+        else
+          t1.notifyListeners$0();
+    },
+    $signature: 10
+  };
+  A.AppState__startLiveTickerTimer_closure.prototype = {
+    call$1(__wc0_formal) {
+      var t1, t2, t3;
+      type$.Timer._as(__wc0_formal);
+      t1 = B.JSInt_methods.$mod(A.Primitives_getSeconds(new A.DateTime(Date.now(), 0, false)), 7);
+      t2 = this.$this;
+      t3 = t2.selectedEvent;
+      t3.listenerCount = B.JSInt_methods.clamp$2(t3.listenerCount + (t1 - 3), 100, 50000);
+      t2.notifyListeners$0();
+    },
+    $signature: 10
+  };
+  A.AppState_nextSong_closure.prototype = {
+    call$1(s) {
+      return type$.Song._as(s).id === this.$this.currentSong.id;
+    },
+    $signature: 2
+  };
+  A.AppState_prevSong_closure.prototype = {
+    call$1(s) {
+      return type$.Song._as(s).id === this.$this.currentSong.id;
+    },
+    $signature: 2
+  };
   A.AppState_refreshFromStorage_closure.prototype = {
     call$1(e) {
       return A.SongRequest_SongRequest$fromJson(A.LinkedHashMap_LinkedHashMap$from(type$.Map_dynamic_dynamic._as(e), type$.String, type$.dynamic));
     },
-    $signature: 9
+    $signature: 11
   };
   A.AppState_refreshFromStorage_closure0.prototype = {
     call$2(a, b) {
@@ -6579,19 +6938,19 @@
       t1._as(a);
       return B.JSInt_methods.compareTo$1(t1._as(b).requestCount, a.requestCount);
     },
-    $signature: 2
+    $signature: 3
   };
   A.AppState__saveQueueToStorage_closure.prototype = {
     call$1(r) {
       return type$.SongRequest._as(r).toJson$0();
     },
-    $signature: 3
+    $signature: 5
   };
   A.AppState_syncQueueFromPayload_closure.prototype = {
     call$1(e) {
       return A.SongRequest_SongRequest$fromJson(A.LinkedHashMap_LinkedHashMap$from(type$.Map_dynamic_dynamic._as(e), type$.String, type$.dynamic));
     },
-    $signature: 9
+    $signature: 11
   };
   A.AppState_syncQueueFromPayload_closure0.prototype = {
     call$2(a, b) {
@@ -6599,7 +6958,7 @@
       t1._as(a);
       return B.JSInt_methods.compareTo$1(t1._as(b).requestCount, a.requestCount);
     },
-    $signature: 2
+    $signature: 3
   };
   A.AppState_upvoteRequest_closure.prototype = {
     call$2(a, b) {
@@ -6607,19 +6966,19 @@
       t1._as(a);
       return B.JSInt_methods.compareTo$1(t1._as(b).requestCount, a.requestCount);
     },
-    $signature: 2
+    $signature: 3
   };
   A.AppState_upvoteRequest_closure0.prototype = {
     call$1(r) {
       return type$.SongRequest._as(r).toJson$0();
     },
-    $signature: 3
+    $signature: 5
   };
   A.AppState_addRequest_closure.prototype = {
     call$1(r) {
       return type$.SongRequest._as(r).song.id === this.song.id;
     },
-    $signature: 17
+    $signature: 18
   };
   A.AppState_addRequest_closure0.prototype = {
     call$2(a, b) {
@@ -6627,19 +6986,19 @@
       t1._as(a);
       return B.JSInt_methods.compareTo$1(t1._as(b).requestCount, a.requestCount);
     },
-    $signature: 2
+    $signature: 3
   };
   A.AppState_addRequest_closure1.prototype = {
     call$1(r) {
       return type$.SongRequest._as(r).toJson$0();
     },
-    $signature: 3
+    $signature: 5
   };
   A.main_closure.prototype = {
     call$1(msgPayload) {
       this.appState.syncQueueFromPayload$1(msgPayload);
     },
-    $signature: 18
+    $signature: 19
   };
   A.initUI_closure.prototype = {
     call$1(__wc0_formal) {
@@ -6690,22 +7049,30 @@
     call$1(pl) {
       return type$.Playlist._as(pl).id === this.pId;
     },
-    $signature: 19
+    $signature: 20
   };
   A.initUI__closure0.prototype = {
     call$0() {
       return $.$get$allPlaylists()[0];
     },
-    $signature: 20
+    $signature: 21
   };
   A.initUI_closure6.prototype = {
     call$0() {
-      var backBtn = A._asJSObjectQ(this.topBar.querySelector("#btn-back"));
+      var ticker, t2,
+        t1 = this.topBar,
+        backBtn = A._asJSObjectQ(t1.querySelector("#btn-back"));
       if (backBtn != null)
         if ($.$get$AppState__instance().navigationHistory.length > 1)
           A._asJSObject(backBtn.classList).add("enabled");
         else
           A._asJSObject(backBtn.classList).remove("enabled");
+      ticker = A._asJSObjectQ(t1.querySelector(".live-event-ticker"));
+      if (ticker != null) {
+        t1 = $.$get$AppState__instance().selectedEvent;
+        t2 = t1.listenerCount;
+        ticker.innerHTML = "\ud83d\udd34 LIVE STAGE: <strong>" + t1.name + "</strong> (" + t2 + " active listeners)";
+      }
       A.updateSidebar(this.sidebar);
       A.renderCurrentScreen();
     },
@@ -6761,6 +7128,7 @@
       var t1 = this.state;
       t1.currentSong = this.song;
       t1.isPlaying = true;
+      t1.currentSecondsElapsed = 0;
       t1.notifyListeners$0();
     },
     $signature: 0
@@ -6843,6 +7211,7 @@
       var t1 = this.state;
       t1.currentSong = this.song;
       t1.isPlaying = true;
+      t1.currentSecondsElapsed = 0;
       t1.notifyListeners$0();
     },
     $signature: 0
@@ -6964,7 +7333,7 @@
   };
   A.LibraryScreen_render_closure3.prototype = {
     call$1(e) {
-      var i, t1, t2, list, t3, t4, t5, t6, _i, song, item, t7,
+      var i, t1, t2, list, t3, t4, t5, t6, t7, _i, song, item, t8,
         tabs = A._asJSObject(this.div.querySelectorAll(".tab-btn"));
       for (i = 0; i < A._asInt(tabs.length); ++i) {
         t1 = A._asJSObjectQ(tabs.item(i));
@@ -6981,14 +7350,14 @@
       t2 = init.G;
       list = A._asJSObject(A._asJSObject(t2.document).createElement("div"));
       list.className = "queue-list";
-      for (t3 = this.state, t4 = t3.recentlyPlayed, t5 = type$._ElementEventStreamImpl_JSObject, t6 = t5._eval$1("~(1)?"), t5 = t5._precomputed1, _i = 0; _i < 3; ++_i) {
+      for (t3 = this.state, t4 = t3.recentlyPlayed, t5 = t4.length, t6 = type$._ElementEventStreamImpl_JSObject, t7 = t6._eval$1("~(1)?"), t6 = t6._precomputed1, _i = 0; _i < t4.length; t4.length === t5 || (0, A.throwConcurrentModificationError)(t4), ++_i) {
         song = t4[_i];
         item = A._asJSObject(A._asJSObject(t2.document).createElement("div"));
         item.className = "queue-card-item";
         item.innerHTML = '          <img src="' + song.coverImage + string$.x22_clas + song.title + string$.x3c_div_ + song.artist + " \u2022 " + song.album + '</div>\n          </div>\n          <button class="primary-btn play-recent-btn">\u25b6 Replay</button>\n        ';
-        t7 = A._asJSObjectQ(item.querySelector(".play-recent-btn"));
-        if (t7 != null)
-          A._EventStreamSubscription$(t7, "click", t6._as(new A.LibraryScreen_render__closure(t3, song)), false, t5);
+        t8 = A._asJSObjectQ(item.querySelector(".play-recent-btn"));
+        if (t8 != null)
+          A._EventStreamSubscription$(t8, "click", t7._as(new A.LibraryScreen_render__closure(t3, song)), false, t6);
         list.append(item);
       }
       t1.append(list);
@@ -7000,6 +7369,7 @@
       var t1 = this.state;
       t1.currentSong = this.song;
       t1.isPlaying = true;
+      t1.currentSecondsElapsed = 0;
       t1.notifyListeners$0();
     },
     $signature: 0
@@ -7009,7 +7379,7 @@
       type$.Song._as(s);
       return '<option value="' + s.id + '">' + s.title + " \u2014 " + s.artist + " (" + s.genre + ")</option>";
     },
-    $signature: 21
+    $signature: 22
   };
   A.LiveQueueScreen_render_closure0.prototype = {
     call$1(__wc0_formal) {
@@ -7038,7 +7408,7 @@
     call$1(s) {
       return type$.Song._as(s).id === this.songId;
     },
-    $signature: 10
+    $signature: 2
   };
   A.PlaylistDetailScreen_render_closure.prototype = {
     call$1(__wc0_formal) {
@@ -7057,6 +7427,7 @@
       var t1 = this.state;
       t1.currentSong = this.song;
       t1.isPlaying = true;
+      t1.currentSecondsElapsed = 0;
       t1.notifyListeners$0();
     },
     $signature: 0
@@ -7086,6 +7457,7 @@
           return A.ioore(t1, 0);
         t3.currentSong = t1[0];
         t3.isPlaying = true;
+        t3.currentSecondsElapsed = 0;
         t3.notifyListeners$0();
       }
     },
@@ -7112,13 +7484,14 @@
         t1.append(card);
       }
     },
-    $signature: 22
+    $signature: 23
   };
   A.SearchScreen_render_displayResults_closure.prototype = {
     call$1(__wc1_formal) {
       var t1 = this.state;
       t1.currentSong = this.song;
       t1.isPlaying = true;
+      t1.currentSecondsElapsed = 0;
       t1.notifyListeners$0();
     },
     $signature: 0
@@ -7146,13 +7519,13 @@
       t1 = this.query;
       return B.JSString_methods.contains$1(s.title.toLowerCase(), t1) || B.JSString_methods.contains$1(s.artist.toLowerCase(), t1) || B.JSString_methods.contains$1(s.genre.toLowerCase(), t1);
     },
-    $signature: 10
+    $signature: 2
   };
   A.RealtimeService_init_closure.prototype = {
     call$1($event) {
       this.onMessage.call$1(J.toString$0$(A._asJSObject($event).data));
     },
-    $signature: 11
+    $signature: 12
   };
   A.RealtimeService_init_closure0.prototype = {
     call$1($event) {
@@ -7163,7 +7536,7 @@
         t1.notifyListeners$0();
       }
     },
-    $signature: 11
+    $signature: 12
   };
   A.PlayerWidget_create_closure.prototype = {
     call$0() {
@@ -7181,12 +7554,24 @@
   };
   A.PlayerWidget_updatePlayer_closure0.prototype = {
     call$1(__wc1_formal) {
-      this.state.toggleLikeSong$1(this.song);
+      this.state.nextSong$0();
     },
     $signature: 0
   };
   A.PlayerWidget_updatePlayer_closure1.prototype = {
     call$1(__wc2_formal) {
+      this.state.prevSong$0();
+    },
+    $signature: 0
+  };
+  A.PlayerWidget_updatePlayer_closure2.prototype = {
+    call$1(__wc3_formal) {
+      this.state.toggleLikeSong$1(this.song);
+    },
+    $signature: 0
+  };
+  A.PlayerWidget_updatePlayer_closure3.prototype = {
+    call$1(__wc4_formal) {
       var t1 = this.state;
       t1.addRequest$1(this.song);
       t1.pushScreen$1("queue");
@@ -7210,18 +7595,18 @@
   (function installTearOffs() {
     var _static_1 = hunkHelpers._static_1,
       _static_0 = hunkHelpers._static_0;
-    _static_1(A, "async__AsyncRun__scheduleImmediateJsOverride$closure", "_AsyncRun__scheduleImmediateJsOverride", 4);
-    _static_1(A, "async__AsyncRun__scheduleImmediateWithSetImmediate$closure", "_AsyncRun__scheduleImmediateWithSetImmediate", 4);
-    _static_1(A, "async__AsyncRun__scheduleImmediateWithTimer$closure", "_AsyncRun__scheduleImmediateWithTimer", 4);
+    _static_1(A, "async__AsyncRun__scheduleImmediateJsOverride$closure", "_AsyncRun__scheduleImmediateJsOverride", 6);
+    _static_1(A, "async__AsyncRun__scheduleImmediateWithSetImmediate$closure", "_AsyncRun__scheduleImmediateWithSetImmediate", 6);
+    _static_1(A, "async__AsyncRun__scheduleImmediateWithTimer$closure", "_AsyncRun__scheduleImmediateWithTimer", 6);
     _static_0(A, "async___startMicrotaskLoop$closure", "_startMicrotaskLoop", 1);
-    _static_1(A, "convert___defaultToEncodable$closure", "_defaultToEncodable", 5);
+    _static_1(A, "convert___defaultToEncodable$closure", "_defaultToEncodable", 7);
   })();
   (function inheritance() {
     var _mixin = hunkHelpers.mixin,
       _inherit = hunkHelpers.inherit,
       _inheritMany = hunkHelpers.inheritMany;
     _inherit(A.Object, null);
-    _inheritMany(A.Object, [A.JS_CONST, J.Interceptor, A.SafeToStringHook, J.ArrayIterator, A.Error, A.Iterable, A.ListIterator, A.WhereIterator, A.FixedLengthListMixin, A.TypeErrorDecoder, A.NullThrownFromJavaScriptException, A._StackTrace, A.Closure, A.MapBase, A.LinkedHashMapCell, A.LinkedHashMapKeyIterator, A.Rti, A._FunctionParameters, A._Type, A._TimerImpl, A.AsyncError, A._FutureListener, A._Future, A._AsyncCallbackEntry, A.Stream, A._Zone, A.ListBase, A.Codec, A.Converter, A._JsonStringifier, A.OutOfMemoryError, A.StackOverflowError, A._Exception, A.FormatException, A.Null, A._StringStackTrace, A.StringBuffer, A.AppState, A.Artist, A.Event, A.Playlist, A.Song, A.SongRequest, A.EventStreamProvider, A._EventStreamSubscription]);
+    _inheritMany(A.Object, [A.JS_CONST, J.Interceptor, A.SafeToStringHook, J.ArrayIterator, A.Error, A.SentinelValue, A.Iterable, A.ListIterator, A.WhereIterator, A.FixedLengthListMixin, A.TypeErrorDecoder, A.NullThrownFromJavaScriptException, A._StackTrace, A.Closure, A.MapBase, A.LinkedHashMapCell, A.LinkedHashMapKeyIterator, A.Rti, A._FunctionParameters, A._Type, A._TimerImpl, A.AsyncError, A._FutureListener, A._Future, A._AsyncCallbackEntry, A.Stream, A._Zone, A.ListBase, A.Codec, A.Converter, A._JsonStringifier, A.DateTime, A.Duration, A.OutOfMemoryError, A.StackOverflowError, A._Exception, A.FormatException, A.Null, A._StringStackTrace, A.StringBuffer, A.AppState, A.Artist, A.Event, A.Playlist, A.Song, A.SongRequest, A.EventStreamProvider, A._EventStreamSubscription]);
     _inheritMany(J.Interceptor, [J.JSBool, J.JSNull, J.JavaScriptObject, J.JavaScriptBigInt, J.JavaScriptSymbol, J.JSNumber, J.JSString]);
     _inheritMany(J.JavaScriptObject, [J.LegacyJavaScriptObject, J.JSArray, A.NativeByteBuffer, A.NativeTypedData]);
     _inheritMany(J.LegacyJavaScriptObject, [J.PlainJavaScriptObject, J.UnknownJavaScriptObject, J.JavaScriptFunction]);
@@ -7233,7 +7618,7 @@
     _inheritMany(A.EfficientLengthIterable, [A.ListIterable, A.LinkedHashMapKeysIterable]);
     _inheritMany(A.ListIterable, [A.MappedListIterable, A._JsonMapKeyIterable]);
     _inherit(A.NullError, A.TypeError);
-    _inheritMany(A.Closure, [A.Closure0Args, A.Closure2Args, A.TearOffClosure, A.initHooks_closure, A.initHooks_closure1, A._AsyncRun__initializeScheduleImmediate_internalCallback, A._AsyncRun__initializeScheduleImmediate_closure, A._Future__propagateToListeners_handleWhenCompleteCallback_closure, A.Stream_length_closure, A._RootZone_bindUnaryCallbackGuarded_closure, A.AppState_refreshFromStorage_closure, A.AppState__saveQueueToStorage_closure, A.AppState_syncQueueFromPayload_closure, A.AppState_upvoteRequest_closure0, A.AppState_addRequest_closure, A.AppState_addRequest_closure1, A.main_closure, A.initUI_closure, A.initUI_closure0, A.initUI_closure1, A.initUI_closure2, A.initUI_closure3, A.initUI_closure4, A.initUI_closure5, A.initUI__closure, A.EventsScreen_render_closure, A.EventsScreen_render_closure0, A.HomeScreen_render_closure, A.HomeScreen_render_closure0, A.HomeScreen_render_closure1, A.HomeScreen_render_closure2, A.HomeScreen_render_closure3, A.HomeScreen_render_closure4, A.HomeScreen_render_closure5, A.HomeScreen_render_closure6, A.LibraryScreen_render_closure, A.LibraryScreen_render_renderLikedSongs_closure, A.LibraryScreen_render_renderLikedSongs_closure0, A.LibraryScreen_render_closure0, A.LibraryScreen_render_closure1, A.LibraryScreen_render__closure1, A.LibraryScreen_render_closure2, A.LibraryScreen_render__closure0, A.LibraryScreen_render_closure3, A.LibraryScreen_render__closure, A.LiveQueueScreen_render_closure, A.LiveQueueScreen_render_closure0, A.LiveQueueScreen_render_closure1, A.LiveQueueScreen_render_closure2, A.LiveQueueScreen_render__closure, A.PlaylistDetailScreen_render_closure, A.PlaylistDetailScreen_render_closure0, A.PlaylistDetailScreen_render_closure1, A.PlaylistDetailScreen_render_closure2, A.PlaylistDetailScreen_render_closure3, A.PlaylistDetailScreen_render_closure4, A.SearchScreen_render_closure, A.SearchScreen_render_displayResults, A.SearchScreen_render_displayResults_closure, A.SearchScreen_render_closure0, A.SearchScreen_render__closure, A.RealtimeService_init_closure, A.RealtimeService_init_closure0, A.PlayerWidget_updatePlayer_closure, A.PlayerWidget_updatePlayer_closure0, A.PlayerWidget_updatePlayer_closure1, A._EventStreamSubscription_closure]);
+    _inheritMany(A.Closure, [A.Closure0Args, A.Closure2Args, A.TearOffClosure, A.initHooks_closure, A.initHooks_closure1, A._AsyncRun__initializeScheduleImmediate_internalCallback, A._AsyncRun__initializeScheduleImmediate_closure, A._Future__propagateToListeners_handleWhenCompleteCallback_closure, A.Stream_length_closure, A._RootZone_bindUnaryCallbackGuarded_closure, A.AppState__startPlaybackTimer_closure, A.AppState__startLiveTickerTimer_closure, A.AppState_nextSong_closure, A.AppState_prevSong_closure, A.AppState_refreshFromStorage_closure, A.AppState__saveQueueToStorage_closure, A.AppState_syncQueueFromPayload_closure, A.AppState_upvoteRequest_closure0, A.AppState_addRequest_closure, A.AppState_addRequest_closure1, A.main_closure, A.initUI_closure, A.initUI_closure0, A.initUI_closure1, A.initUI_closure2, A.initUI_closure3, A.initUI_closure4, A.initUI_closure5, A.initUI__closure, A.EventsScreen_render_closure, A.EventsScreen_render_closure0, A.HomeScreen_render_closure, A.HomeScreen_render_closure0, A.HomeScreen_render_closure1, A.HomeScreen_render_closure2, A.HomeScreen_render_closure3, A.HomeScreen_render_closure4, A.HomeScreen_render_closure5, A.HomeScreen_render_closure6, A.LibraryScreen_render_closure, A.LibraryScreen_render_renderLikedSongs_closure, A.LibraryScreen_render_renderLikedSongs_closure0, A.LibraryScreen_render_closure0, A.LibraryScreen_render_closure1, A.LibraryScreen_render__closure1, A.LibraryScreen_render_closure2, A.LibraryScreen_render__closure0, A.LibraryScreen_render_closure3, A.LibraryScreen_render__closure, A.LiveQueueScreen_render_closure, A.LiveQueueScreen_render_closure0, A.LiveQueueScreen_render_closure1, A.LiveQueueScreen_render_closure2, A.LiveQueueScreen_render__closure, A.PlaylistDetailScreen_render_closure, A.PlaylistDetailScreen_render_closure0, A.PlaylistDetailScreen_render_closure1, A.PlaylistDetailScreen_render_closure2, A.PlaylistDetailScreen_render_closure3, A.PlaylistDetailScreen_render_closure4, A.SearchScreen_render_closure, A.SearchScreen_render_displayResults, A.SearchScreen_render_displayResults_closure, A.SearchScreen_render_closure0, A.SearchScreen_render__closure, A.RealtimeService_init_closure, A.RealtimeService_init_closure0, A.PlayerWidget_updatePlayer_closure, A.PlayerWidget_updatePlayer_closure0, A.PlayerWidget_updatePlayer_closure1, A.PlayerWidget_updatePlayer_closure2, A.PlayerWidget_updatePlayer_closure3, A._EventStreamSubscription_closure]);
     _inheritMany(A.TearOffClosure, [A.StaticClosure, A.BoundClosure]);
     _inheritMany(A.MapBase, [A.JsLinkedHashMap, A._JsonMap]);
     _inheritMany(A.Closure2Args, [A.initHooks_closure0, A._Future__propagateToListeners_handleWhenCompleteCallback_closure0, A.LinkedHashMap_LinkedHashMap$from_closure, A.MapBase_mapToString_closure, A._JsonStringifier_writeMap_closure, A.AppState_refreshFromStorage_closure0, A.AppState_syncQueueFromPayload_closure0, A.AppState_upvoteRequest_closure, A.AppState_addRequest_closure0]);
@@ -7246,7 +7631,7 @@
     _inheritMany(A.NativeTypedArrayOfDouble, [A.NativeFloat32List, A.NativeFloat64List]);
     _inheritMany(A.NativeTypedArrayOfInt, [A.NativeInt16List, A.NativeInt32List, A.NativeInt8List, A.NativeUint16List, A.NativeUint32List, A.NativeUint8ClampedList, A.NativeUint8List]);
     _inherit(A._TypeError, A._Error);
-    _inheritMany(A.Closure0Args, [A._AsyncRun__scheduleImmediateJsOverride_internalCallback, A._AsyncRun__scheduleImmediateWithSetImmediate_internalCallback, A._TimerImpl_internalCallback, A._Future__addListener_closure, A._Future__prependListeners_closure, A._Future__asyncCompleteErrorObject_closure, A._Future__propagateToListeners_handleWhenCompleteCallback, A._Future__propagateToListeners_handleValueCallback, A._Future__propagateToListeners_handleError, A.Stream_length_closure0, A._RootZone_bindCallbackGuarded_closure, A._rootHandleError_closure, A.initUI__closure0, A.initUI_closure6, A.LibraryScreen_render_renderLikedSongs, A.PlayerWidget_create_closure]);
+    _inheritMany(A.Closure0Args, [A._AsyncRun__scheduleImmediateJsOverride_internalCallback, A._AsyncRun__scheduleImmediateWithSetImmediate_internalCallback, A._TimerImpl_internalCallback, A._TimerImpl$periodic_closure, A._Future__addListener_closure, A._Future__prependListeners_closure, A._Future__asyncCompleteErrorObject_closure, A._Future__propagateToListeners_handleWhenCompleteCallback, A._Future__propagateToListeners_handleValueCallback, A._Future__propagateToListeners_handleError, A.Stream_length_closure0, A._RootZone_bindCallbackGuarded_closure, A._rootHandleError_closure, A.initUI__closure0, A.initUI_closure6, A.LibraryScreen_render_renderLikedSongs, A.PlayerWidget_create_closure]);
     _inherit(A._RootZone, A._Zone);
     _inherit(A.JsonCyclicError, A.JsonUnsupportedObjectError);
     _inherit(A.JsonCodec, A.Codec);
@@ -7265,12 +7650,12 @@
     typeUniverse: {eC: new Map(), tR: {}, eT: {}, tPV: {}, sEA: []},
     mangledGlobalNames: {int: "int", double: "double", num: "num", String: "String", bool: "bool", Null: "Null", List: "List", Object: "Object", Map: "Map", JSObject: "JSObject"},
     mangledNames: {},
-    types: ["~(JSObject)", "~()", "int(SongRequest,SongRequest)", "Map<String,@>(SongRequest)", "~(~())", "@(@)", "Null(@)", "Null()", "~(Object?,Object?)", "SongRequest(@)", "bool(Song)", "Null(JSObject)", "@(@,String)", "@(String)", "Null(~())", "Null(Object,StackTrace)", "~(@,@)", "bool(SongRequest)", "Null(String)", "bool(Playlist)", "Playlist()", "String(Song)", "~(List<Song>)"],
+    types: ["~(JSObject)", "~()", "bool(Song)", "int(SongRequest,SongRequest)", "Null()", "Map<String,@>(SongRequest)", "~(~())", "@(@)", "Null(@)", "~(Object?,Object?)", "~(Timer)", "SongRequest(@)", "Null(JSObject)", "@(@,String)", "@(String)", "Null(~())", "Null(Object,StackTrace)", "~(@,@)", "bool(SongRequest)", "Null(String)", "bool(Playlist)", "Playlist()", "String(Song)", "~(List<Song>)"],
     interceptorsByTag: null,
     leafTags: null,
     arrayRti: Symbol("$ti")
   };
-  A._Universe_addRules(init.typeUniverse, JSON.parse('{"JavaScriptFunction":"LegacyJavaScriptObject","PlainJavaScriptObject":"LegacyJavaScriptObject","UnknownJavaScriptObject":"LegacyJavaScriptObject","NativeArrayBuffer":"NativeByteBuffer","JSBool":{"bool":[],"TrustedGetRuntimeType":[]},"JSNull":{"TrustedGetRuntimeType":[]},"JavaScriptObject":{"JSObject":[]},"LegacyJavaScriptObject":{"JSObject":[]},"JSArray":{"List":["1"],"JSObject":[],"Iterable":["1"]},"JSArraySafeToStringHook":{"SafeToStringHook":[]},"JSUnmodifiableArray":{"JSArray":["1"],"List":["1"],"JSObject":[],"Iterable":["1"]},"ArrayIterator":{"Iterator":["1"]},"JSNumber":{"double":[],"num":[]},"JSInt":{"double":[],"int":[],"num":[],"TrustedGetRuntimeType":[]},"JSNumNotInt":{"double":[],"num":[],"TrustedGetRuntimeType":[]},"JSString":{"String":[],"Pattern":[],"TrustedGetRuntimeType":[]},"LateError":{"Error":[]},"EfficientLengthIterable":{"Iterable":["1"]},"ListIterable":{"Iterable":["1"]},"ListIterator":{"Iterator":["1"]},"MappedListIterable":{"ListIterable":["2"],"Iterable":["2"],"ListIterable.E":"2","Iterable.E":"2"},"WhereIterable":{"Iterable":["1"],"Iterable.E":"1"},"WhereIterator":{"Iterator":["1"]},"NullError":{"TypeError":[],"Error":[]},"JsNoSuchMethodError":{"Error":[]},"UnknownJsTypeError":{"Error":[]},"_StackTrace":{"StackTrace":[]},"Closure":{"Function":[]},"Closure0Args":{"Function":[]},"Closure2Args":{"Function":[]},"TearOffClosure":{"Function":[]},"StaticClosure":{"Function":[]},"BoundClosure":{"Function":[]},"RuntimeError":{"Error":[]},"JsLinkedHashMap":{"MapBase":["1","2"],"LinkedHashMap":["1","2"],"Map":["1","2"],"MapBase.K":"1","MapBase.V":"2"},"LinkedHashMapKeysIterable":{"Iterable":["1"],"Iterable.E":"1"},"LinkedHashMapKeyIterator":{"Iterator":["1"]},"NativeByteBuffer":{"JSObject":[],"TrustedGetRuntimeType":[]},"NativeTypedData":{"JSObject":[]},"NativeByteData":{"JSObject":[],"TrustedGetRuntimeType":[]},"NativeTypedArray":{"JavaScriptIndexingBehavior":["1"],"JSObject":[]},"NativeTypedArrayOfDouble":{"ListBase":["double"],"List":["double"],"JavaScriptIndexingBehavior":["double"],"JSObject":[],"Iterable":["double"],"FixedLengthListMixin":["double"]},"NativeTypedArrayOfInt":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"]},"NativeFloat32List":{"ListBase":["double"],"List":["double"],"JavaScriptIndexingBehavior":["double"],"JSObject":[],"Iterable":["double"],"FixedLengthListMixin":["double"],"TrustedGetRuntimeType":[],"ListBase.E":"double"},"NativeFloat64List":{"ListBase":["double"],"List":["double"],"JavaScriptIndexingBehavior":["double"],"JSObject":[],"Iterable":["double"],"FixedLengthListMixin":["double"],"TrustedGetRuntimeType":[],"ListBase.E":"double"},"NativeInt16List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeInt32List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeInt8List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint16List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint32List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint8ClampedList":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint8List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"_Error":{"Error":[]},"_TypeError":{"TypeError":[],"Error":[]},"AsyncError":{"Error":[]},"_Future":{"Future":["1"]},"_Zone":{"Zone":[]},"_RootZone":{"_Zone":[],"Zone":[]},"MapBase":{"Map":["1","2"]},"_JsonMap":{"MapBase":["String","@"],"Map":["String","@"],"MapBase.K":"String","MapBase.V":"@"},"_JsonMapKeyIterable":{"ListIterable":["String"],"Iterable":["String"],"ListIterable.E":"String","Iterable.E":"String"},"JsonUnsupportedObjectError":{"Error":[]},"JsonCyclicError":{"Error":[]},"double":{"num":[]},"int":{"num":[]},"List":{"Iterable":["1"]},"String":{"Pattern":[]},"AssertionError":{"Error":[]},"TypeError":{"Error":[]},"ArgumentError":{"Error":[]},"RangeError":{"Error":[]},"IndexError":{"Error":[]},"UnsupportedError":{"Error":[]},"UnimplementedError":{"Error":[]},"StateError":{"Error":[]},"ConcurrentModificationError":{"Error":[]},"OutOfMemoryError":{"Error":[]},"StackOverflowError":{"Error":[]},"_StringStackTrace":{"StackTrace":[]},"StringBuffer":{"StringSink":[]},"_EventStream":{"Stream":["1"]},"_ElementEventStreamImpl":{"_EventStream":["1"],"Stream":["1"]},"Int8List":{"List":["int"],"Iterable":["int"]},"Uint8List":{"List":["int"],"Iterable":["int"]},"Uint8ClampedList":{"List":["int"],"Iterable":["int"]},"Int16List":{"List":["int"],"Iterable":["int"]},"Uint16List":{"List":["int"],"Iterable":["int"]},"Int32List":{"List":["int"],"Iterable":["int"]},"Uint32List":{"List":["int"],"Iterable":["int"]},"Float32List":{"List":["double"],"Iterable":["double"]},"Float64List":{"List":["double"],"Iterable":["double"]}}'));
+  A._Universe_addRules(init.typeUniverse, JSON.parse('{"JavaScriptFunction":"LegacyJavaScriptObject","PlainJavaScriptObject":"LegacyJavaScriptObject","UnknownJavaScriptObject":"LegacyJavaScriptObject","NativeArrayBuffer":"NativeByteBuffer","JSBool":{"bool":[],"TrustedGetRuntimeType":[]},"JSNull":{"TrustedGetRuntimeType":[]},"JavaScriptObject":{"JSObject":[]},"LegacyJavaScriptObject":{"JSObject":[]},"JSArray":{"List":["1"],"JSObject":[],"Iterable":["1"]},"JSArraySafeToStringHook":{"SafeToStringHook":[]},"JSUnmodifiableArray":{"JSArray":["1"],"List":["1"],"JSObject":[],"Iterable":["1"]},"ArrayIterator":{"Iterator":["1"]},"JSNumber":{"double":[],"num":[]},"JSInt":{"double":[],"int":[],"num":[],"TrustedGetRuntimeType":[]},"JSNumNotInt":{"double":[],"num":[],"TrustedGetRuntimeType":[]},"JSString":{"String":[],"Pattern":[],"TrustedGetRuntimeType":[]},"LateError":{"Error":[]},"EfficientLengthIterable":{"Iterable":["1"]},"ListIterable":{"Iterable":["1"]},"ListIterator":{"Iterator":["1"]},"MappedListIterable":{"ListIterable":["2"],"Iterable":["2"],"ListIterable.E":"2","Iterable.E":"2"},"WhereIterable":{"Iterable":["1"],"Iterable.E":"1"},"WhereIterator":{"Iterator":["1"]},"NullError":{"TypeError":[],"Error":[]},"JsNoSuchMethodError":{"Error":[]},"UnknownJsTypeError":{"Error":[]},"_StackTrace":{"StackTrace":[]},"Closure":{"Function":[]},"Closure0Args":{"Function":[]},"Closure2Args":{"Function":[]},"TearOffClosure":{"Function":[]},"StaticClosure":{"Function":[]},"BoundClosure":{"Function":[]},"RuntimeError":{"Error":[]},"JsLinkedHashMap":{"MapBase":["1","2"],"LinkedHashMap":["1","2"],"Map":["1","2"],"MapBase.K":"1","MapBase.V":"2"},"LinkedHashMapKeysIterable":{"Iterable":["1"],"Iterable.E":"1"},"LinkedHashMapKeyIterator":{"Iterator":["1"]},"NativeByteBuffer":{"JSObject":[],"TrustedGetRuntimeType":[]},"NativeTypedData":{"JSObject":[]},"NativeByteData":{"JSObject":[],"TrustedGetRuntimeType":[]},"NativeTypedArray":{"JavaScriptIndexingBehavior":["1"],"JSObject":[]},"NativeTypedArrayOfDouble":{"ListBase":["double"],"List":["double"],"JavaScriptIndexingBehavior":["double"],"JSObject":[],"Iterable":["double"],"FixedLengthListMixin":["double"]},"NativeTypedArrayOfInt":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"]},"NativeFloat32List":{"ListBase":["double"],"List":["double"],"JavaScriptIndexingBehavior":["double"],"JSObject":[],"Iterable":["double"],"FixedLengthListMixin":["double"],"TrustedGetRuntimeType":[],"ListBase.E":"double"},"NativeFloat64List":{"ListBase":["double"],"List":["double"],"JavaScriptIndexingBehavior":["double"],"JSObject":[],"Iterable":["double"],"FixedLengthListMixin":["double"],"TrustedGetRuntimeType":[],"ListBase.E":"double"},"NativeInt16List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeInt32List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeInt8List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint16List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint32List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint8ClampedList":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"NativeUint8List":{"ListBase":["int"],"List":["int"],"JavaScriptIndexingBehavior":["int"],"JSObject":[],"Iterable":["int"],"FixedLengthListMixin":["int"],"TrustedGetRuntimeType":[],"ListBase.E":"int"},"_Error":{"Error":[]},"_TypeError":{"TypeError":[],"Error":[]},"_TimerImpl":{"Timer":[]},"AsyncError":{"Error":[]},"_Future":{"Future":["1"]},"_Zone":{"Zone":[]},"_RootZone":{"_Zone":[],"Zone":[]},"MapBase":{"Map":["1","2"]},"_JsonMap":{"MapBase":["String","@"],"Map":["String","@"],"MapBase.K":"String","MapBase.V":"@"},"_JsonMapKeyIterable":{"ListIterable":["String"],"Iterable":["String"],"ListIterable.E":"String","Iterable.E":"String"},"JsonUnsupportedObjectError":{"Error":[]},"JsonCyclicError":{"Error":[]},"double":{"num":[]},"int":{"num":[]},"List":{"Iterable":["1"]},"String":{"Pattern":[]},"AssertionError":{"Error":[]},"TypeError":{"Error":[]},"ArgumentError":{"Error":[]},"RangeError":{"Error":[]},"IndexError":{"Error":[]},"UnsupportedError":{"Error":[]},"UnimplementedError":{"Error":[]},"StateError":{"Error":[]},"ConcurrentModificationError":{"Error":[]},"OutOfMemoryError":{"Error":[]},"StackOverflowError":{"Error":[]},"_StringStackTrace":{"StackTrace":[]},"StringBuffer":{"StringSink":[]},"_EventStream":{"Stream":["1"]},"_ElementEventStreamImpl":{"_EventStream":["1"],"Stream":["1"]},"Int8List":{"List":["int"],"Iterable":["int"]},"Uint8List":{"List":["int"],"Iterable":["int"]},"Uint8ClampedList":{"List":["int"],"Iterable":["int"]},"Int16List":{"List":["int"],"Iterable":["int"]},"Uint16List":{"List":["int"],"Iterable":["int"]},"Int32List":{"List":["int"],"Iterable":["int"]},"Uint32List":{"List":["int"],"Iterable":["int"]},"Float32List":{"List":["double"],"Iterable":["double"]},"Float64List":{"List":["double"],"Iterable":["double"]}}'));
   A._Universe_addErasedTypes(init.typeUniverse, JSON.parse('{"EfficientLengthIterable":1,"NativeTypedArray":1,"Codec":2,"Converter":2}'));
   var string$ = {
     x20_____: '      <div class="screen-header">\n        ',
@@ -7307,6 +7692,7 @@
       SongRequest: findType("SongRequest"),
       StackTrace: findType("StackTrace"),
       String: findType("String"),
+      Timer: findType("Timer"),
       TrustedGetRuntimeType: findType("TrustedGetRuntimeType"),
       TypeError: findType("TypeError"),
       UnknownJavaScriptObject: findType("UnknownJavaScriptObject"),
@@ -7335,7 +7721,8 @@
       num: findType("num"),
       void: findType("~"),
       void_Function: findType("~()"),
-      void_Function_String_dynamic: findType("~(String,@)")
+      void_Function_String_dynamic: findType("~(String,@)"),
+      void_Function_Timer: findType("~(Timer)")
     };
   })();
   (function constants() {
@@ -7475,8 +7862,11 @@
 ;
     B.C_JsonCodec = new A.JsonCodec();
     B.C_OutOfMemoryError = new A.OutOfMemoryError();
+    B.C_SentinelValue = new A.SentinelValue();
     B.C__RootZone = new A._RootZone();
     B.C__StringStackTrace = new A._StringStackTrace();
+    B.Duration_1000000 = new A.Duration(1000000);
+    B.Duration_4000000 = new A.Duration(4000000);
     B.JsonDecoder_null = new A.JsonDecoder(null);
     B.JsonEncoder_null = new A.JsonEncoder(null);
     B.Type_ByteBuffer_rqD = A.typeLiteral("ByteBuffer");
@@ -7486,6 +7876,7 @@
     B.Type_Int16List_s5h = A.typeLiteral("Int16List");
     B.Type_Int32List_O8Z = A.typeLiteral("Int32List");
     B.Type_Int8List_rFV = A.typeLiteral("Int8List");
+    B.Type_Object_A4p = A.typeLiteral("Object");
     B.Type_Uint16List_kmP = A.typeLiteral("Uint16List");
     B.Type_Uint32List_kmP = A.typeLiteral("Uint32List");
     B.Type_Uint8ClampedList_04U = A.typeLiteral("Uint8ClampedList");
@@ -7560,21 +7951,45 @@
       }
     }()));
     _lazyFinal($, "_AsyncRun__scheduleImmediateClosure", "$get$_AsyncRun__scheduleImmediateClosure", () => A._AsyncRun__initializeScheduleImmediate());
+    _lazyFinal($, "_hashSeed", "$get$_hashSeed", () => A.objectHashCode(B.Type_Object_A4p));
     _lazyFinal($, "AppState__instance", "$get$AppState__instance", () => {
-      var t10,
+      var t6, t7, t8, t9, t10, t11, t12, t13,
         t1 = A._setArrayType(["home"], type$.JSArray_String),
         t2 = $.$get$allEvents()[0],
         t3 = $.$get$allPlaylists(),
         t4 = t3[0],
-        t5 = $.$get$allSongs(),
-        t6 = t5[0],
-        t7 = A._setArrayType([], type$.JSArray_SongRequest),
-        t8 = A.findType("JSArray<Song>"),
-        t9 = A._setArrayType([t5[0], t5[2], t5[6]], t8);
+        t5 = $.$get$allSongs();
+      if (0 >= t5.length)
+        return A.ioore(t5, 0);
+      t6 = t5[0];
+      t7 = A._setArrayType([], type$.JSArray_SongRequest);
+      t8 = t5.length;
+      if (0 >= t8)
+        return A.ioore(t5, 0);
+      t9 = t5[0];
+      if (2 >= t8)
+        return A.ioore(t5, 2);
+      t10 = t5[2];
+      if (6 >= t8)
+        return A.ioore(t5, 6);
+      t8 = A.findType("JSArray<Song>");
+      t10 = A._setArrayType([t9, t10, t5[6]], t8);
       t3 = A._setArrayType([t3[0], t3[2]], A.findType("JSArray<Playlist>"));
-      t10 = $.$get$allArtists();
-      t8 = new A.AppState(t1, t2, t4, t6, t7, t9, t3, A._setArrayType([t10[0], t10[3]], A.findType("JSArray<Artist>")), A._setArrayType([t5[0], t5[1], t5[2]], t8), A._setArrayType([], A.findType("JSArray<~()>")));
+      t9 = $.$get$allArtists();
+      t9 = A._setArrayType([t9[0], t9[3]], A.findType("JSArray<Artist>"));
+      t11 = t5.length;
+      if (0 >= t11)
+        return A.ioore(t5, 0);
+      t12 = t5[0];
+      if (1 >= t11)
+        return A.ioore(t5, 1);
+      t13 = t5[1];
+      if (2 >= t11)
+        return A.ioore(t5, 2);
+      t8 = new A.AppState(t1, t2, t4, t6, t7, t10, t3, t9, A._setArrayType([t12, t13, t5[2]], t8), A._setArrayType([], A.findType("JSArray<~()>")));
       t8.refreshFromStorage$0();
+      t8._startPlaybackTimer$0();
+      t8._startLiveTickerTimer$0();
       return t8;
     });
     _lazyFinal($, "allArtists", "$get$allArtists", () => A._setArrayType([A.Artist$(85200000, "Bollywood Romantic", "a1", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80", true, "Arijit Singh"), A.Artist$(42100000, "Tamil Pop / Rock", "a2", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80", false, "Anirudh Ravichander"), A.Artist$(29400000, "Punjabi Hip Hop", "a3", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80", true, "Karan Aujla"), A.Artist$(18500000, "Indie Acoustic", "a4", "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80", true, "Anuv Jain")], A.findType("JSArray<Artist>")));
@@ -7585,9 +8000,45 @@
       return A._setArrayType([A.Event$("https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=80", _s12_, "s1", "TODAY", "DJ Chetas & DJ Arjun", "e1", 3420, "Powai, Mumbai", "IIT Bombay Mood Indigo \u2014 ProNite Stage", "20:00 - LIVE"), A.Event$("https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80", "Arena Concert", "s4", _s7_, "DJ Harsh & DJ Riya", "e2", 1250, "Seawoods Grand Central, Navi Mumbai", "Navi Mumbai Music Night & DJ Battle", "21:00 - LIVE"), A.Event$("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80", "Live Cafe", "s3", _s7_, "DJ Rohan Roy", "e3", 410, "12th Main, Koramangala, Bengaluru", "Koramangala Acoustic Rooftop Jam", "21:30 - LIVE"), A.Event$("https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80", "Wedding Sangeet", "s4", _s7_, "DJ Harshita", "e4", 380, "The Leela Palace, Udaipur", "Mehra & Kapoor Grand Sangeet Reception", "19:00 - LIVE"), A.Event$("https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&q=80", _s12_, "s7", _s8_, "DJ Shadow Dubai", "e5", 2100, "Shivajinagar, Pune", "Pune Campus DJ Night \u2014 COEP Cultural Fest", "19:30 - UPCOMING"), A.Event$("https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&q=80", _s12_, "s7", _s8_, "DJ Spinny", "e6", 1800, "SRCC Grounds, Delhi", "Delhi University North Campus Spring Fest", "18:00"), A.Event$("https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&q=80", "Music Festival", "s9", "OCT 18", "DJ Progressive India", "e7", 4500, "Manpho Convention Centre, Bengaluru", "Bengaluru Tech & Music Mela 2025", "17:00"), A.Event$("https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&q=80", "Beach Lounge", "s10", "OCT 22", "DJ Maya Sunset", "e8", 890, "Anjuna Beach Cliff, North Goa", "Goa Sunsets Beach Shack Jam", "18:00")], A.findType("JSArray<Event>"));
     });
     _lazyFinal($, "allPlaylists", "$get$allPlaylists", () => {
-      var t1 = $.$get$allSongs(),
-        t2 = A.findType("JSArray<Song>");
-      return A._setArrayType([A.Playlist$(string$.https_5, "The highest requested tracks across top campus pro-nites", "p1", true, "College Fest Bangers", A._setArrayType([t1[0], t1[1], t1[3], t1[5], t1[7]], t2)), A.Playlist$(string$.https_47, "High energy fusion tracks for non-stop dance", "p2", false, "Navratri Garba Beats", A._setArrayType([t1[1], t1[3], t1[7]], t2)), A.Playlist$(string$.https_49, "Acoustic vibes for late-night hostel lounge requests", "p3", true, "Chill Indie Sessions", A._setArrayType([t1[2], t1[9], t1[10]], t2))], A.findType("JSArray<Playlist>"));
+      var t3, t4, t5, t6, t7,
+        t1 = $.$get$allSongs(),
+        t2 = t1.length;
+      if (0 >= t2)
+        return A.ioore(t1, 0);
+      t3 = t1[0];
+      if (1 >= t2)
+        return A.ioore(t1, 1);
+      t4 = t1[1];
+      if (3 >= t2)
+        return A.ioore(t1, 3);
+      t5 = t1[3];
+      if (5 >= t2)
+        return A.ioore(t1, 5);
+      t6 = t1[5];
+      if (7 >= t2)
+        return A.ioore(t1, 7);
+      t2 = A.findType("JSArray<Song>");
+      t6 = A.Playlist$(string$.https_5, "The highest requested tracks across top campus pro-nites", "p1", true, "College Fest Bangers", A._setArrayType([t3, t4, t5, t6, t1[7]], t2));
+      t5 = t1.length;
+      if (1 >= t5)
+        return A.ioore(t1, 1);
+      t4 = t1[1];
+      if (3 >= t5)
+        return A.ioore(t1, 3);
+      t3 = t1[3];
+      if (7 >= t5)
+        return A.ioore(t1, 7);
+      t3 = A.Playlist$(string$.https_47, "High energy fusion tracks for non-stop dance", "p2", false, "Navratri Garba Beats", A._setArrayType([t4, t3, t1[7]], t2));
+      t4 = t1.length;
+      if (2 >= t4)
+        return A.ioore(t1, 2);
+      t5 = t1[2];
+      if (9 >= t4)
+        return A.ioore(t1, 9);
+      t7 = t1[9];
+      if (10 >= t4)
+        return A.ioore(t1, 10);
+      return A._setArrayType([t6, t3, A.Playlist$(string$.https_49, "Acoustic vibes for late-night hostel lounge requests", "p3", true, "Chill Indie Sessions", A._setArrayType([t5, t7, t1[10]], t2))], A.findType("JSArray<Playlist>"));
     });
     _lazyFinal($, "allSongs", "$get$allSongs", () => {
       var _s5_ = "Hindi";

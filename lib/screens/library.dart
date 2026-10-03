@@ -53,6 +53,7 @@ class LibraryScreen {
         item.querySelector('.play-lib-btn')?.onClick.listen((_) {
           state.currentSong = song;
           state.isPlaying = true;
+          state.currentSecondsElapsed = 0;
           state.notifyListeners();
         });
         item.querySelector('.remove-like-btn')?.onClick.listen((_) {
@@ -151,6 +152,7 @@ class LibraryScreen {
         item.querySelector('.play-recent-btn')?.onClick.listen((_) {
           state.currentSong = song;
           state.isPlaying = true;
+          state.currentSecondsElapsed = 0;
           state.notifyListeners();
         });
         list.append(item);

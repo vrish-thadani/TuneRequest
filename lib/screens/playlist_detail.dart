@@ -68,6 +68,7 @@ class PlaylistDetailScreen {
       item.querySelector('.play-track-btn')?.onClick.listen((_) {
         state.currentSong = song;
         state.isPlaying = true;
+        state.currentSecondsElapsed = 0;
         state.notifyListeners();
       });
 
@@ -87,6 +88,7 @@ class PlaylistDetailScreen {
       if (playlist.songs.isNotEmpty) {
         state.currentSong = playlist.songs[0];
         state.isPlaying = true;
+        state.currentSecondsElapsed = 0;
         state.notifyListeners();
       }
     });

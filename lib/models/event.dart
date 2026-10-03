@@ -5,7 +5,7 @@ class Event {
   final String date;
   final String time;
   final String host;
-  final int listenerCount;
+  int listenerCount;
   final String category;
   final String currentSongId;
   final String bannerImage;

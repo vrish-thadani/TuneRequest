@@ -137,7 +137,7 @@ class SongRequest {
   final String date;
   final String time;
   final String host;
-  final int listenerCount;
+  int listenerCount;
   final String category;
   final String currentSongId;
   final String bannerImage;
@@ -308,7 +308,8 @@ final List<Event> allEvents = [
     bannerImage: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&q=80',
   )
 ];""",
-    "app/state.dart": """import 'dart:convert';
+    "app/state.dart": """import 'dart:async';
+import 'dart:convert';
 import '../models/song.dart';
 import '../models/playlist.dart';
 import '../models/artist.dart';
@@ -338,13 +339,82 @@ class AppState {
   List<Song> recentlyPlayed = [allSongs[0], allSongs[1], allSongs[2]];
   
   bool isPlaying = true;
-  int currentProgress = 35;
+  int currentSecondsElapsed = 72; // 1:12 elapsed
+  Timer? playbackTimer;
+  Timer? liveTickerTimer;
 
   static final AppState _instance = AppState._internal();
   factory AppState() => _instance;
 
   AppState._internal() {
     refreshFromStorage();
+    _startPlaybackTimer();
+    _startLiveTickerTimer();
+  }
+
+  void _startPlaybackTimer() {
+    playbackTimer?.cancel();
+    playbackTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (isPlaying && currentSong != null) {
+        currentSecondsElapsed++;
+        if (currentSecondsElapsed >= currentSong!.duration) {
+          nextSong();
+        } else {
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  void _startLiveTickerTimer() {
+    liveTickerTimer?.cancel();
+    liveTickerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (selectedEvent != null) {
+        // Dynamic simulated live attendee fluctuation (+/- 3 listeners)
+        final delta = (DateTime.now().second % 7) - 3;
+        selectedEvent!.listenerCount = (selectedEvent!.listenerCount + delta).clamp(100, 50000);
+        notifyListeners();
+      }
+    });
+  }
+
+  int get currentProgressPercent {
+    if (currentSong == null || currentSong!.duration == 0) return 0;
+    return ((currentSecondsElapsed / currentSong!.duration) * 100).clamp(0, 100).round();
+  }
+
+  String get formattedCurrentTime {
+    final mins = currentSecondsElapsed ~/ 60;
+    final secs = (currentSecondsElapsed % 60).toString().padLeft(2, '0');
+    return '$mins:$secs';
+  }
+
+  void togglePlayPause() {
+    isPlaying = !isPlaying;
+    notifyListeners();
+  }
+
+  void nextSong() {
+    if (currentSong == null) return;
+    final currentIndex = allSongs.indexWhere((s) => s.id == currentSong!.id);
+    final nextIndex = (currentIndex + 1) % allSongs.length;
+    currentSong = allSongs[nextIndex];
+    currentSecondsElapsed = 0;
+    isPlaying = true;
+    if (!recentlyPlayed.contains(currentSong)) {
+      recentlyPlayed.insert(0, currentSong!);
+    }
+    notifyListeners();
+  }
+
+  void prevSong() {
+    if (currentSong == null) return;
+    final currentIndex = allSongs.indexWhere((s) => s.id == currentSong!.id);
+    final prevIndex = (currentIndex - 1 + allSongs.length) % allSongs.length;
+    currentSong = allSongs[prevIndex];
+    currentSecondsElapsed = 0;
+    isPlaying = true;
+    notifyListeners();
   }
 
   void refreshFromStorage() {
@@ -693,6 +763,11 @@ void updateHeader(web.HTMLDivElement topBar) {
       backBtn.classList.remove('enabled');
     }
   }
+
+  final ticker = topBar.querySelector('.live-event-ticker');
+  if (ticker != null) {
+    ticker.innerHTML = '🔴 LIVE STAGE: <strong>${AppState().selectedEvent?.name ?? 'Mood Indigo'}</strong> (${AppState().selectedEvent?.listenerCount ?? 3400} active listeners)'.toJS;
+  }
 }
 
 void updateSidebar(web.HTMLDivElement sidebar) {
@@ -802,6 +877,7 @@ class PlaylistDetailScreen {
       item.querySelector('.play-track-btn')?.onClick.listen((_) {
         state.currentSong = song;
         state.isPlaying = true;
+        state.currentSecondsElapsed = 0;
         state.notifyListeners();
       });
 
@@ -821,6 +897,7 @@ class PlaylistDetailScreen {
       if (playlist.songs.isNotEmpty) {
         state.currentSong = playlist.songs[0];
         state.isPlaying = true;
+        state.currentSecondsElapsed = 0;
         state.notifyListeners();
       }
     });
@@ -903,6 +980,7 @@ class HomeScreen {
       card.querySelector('.img-wrapper')?.onClick.listen((_) {
         state.currentSong = song;
         state.isPlaying = true;
+        state.currentSecondsElapsed = 0;
         state.notifyListeners();
       });
 
@@ -1154,6 +1232,7 @@ class LibraryScreen {
         item.querySelector('.play-lib-btn')?.onClick.listen((_) {
           state.currentSong = song;
           state.isPlaying = true;
+          state.currentSecondsElapsed = 0;
           state.notifyListeners();
         });
         item.querySelector('.remove-like-btn')?.onClick.listen((_) {
@@ -1252,6 +1331,7 @@ class LibraryScreen {
         item.querySelector('.play-recent-btn')?.onClick.listen((_) {
           state.currentSong = song;
           state.isPlaying = true;
+          state.currentSecondsElapsed = 0;
           state.notifyListeners();
         });
         list.append(item);
@@ -1307,6 +1387,7 @@ class SearchScreen {
         card.onClick.listen((_) {
           state.currentSong = song;
           state.isPlaying = true;
+          state.currentSecondsElapsed = 0;
           state.notifyListeners();
         });
         resultsContainer.append(card);
@@ -1372,14 +1453,14 @@ class PlayerWidget {
       </div>
       <div class="player-center">
         <div class="controls">
-          <button id="btn-prev">⏮</button>
-          <button id="btn-play" class="play-pause-circle">${state.isPlaying ? '⏸' : '▶'}</button>
-          <button id="btn-next">⏭</button>
+          <button id="btn-prev" title="Previous Track">⏮</button>
+          <button id="btn-play" class="play-pause-circle" title="${state.isPlaying ? 'Pause' : 'Play'}">${state.isPlaying ? '⏸' : '▶'}</button>
+          <button id="btn-next" title="Next Track">⏭</button>
         </div>
         <div class="progress-container">
-          <span class="time-label">1:12</span>
+          <span class="time-label">${state.formattedCurrentTime}</span>
           <div class="progress-bar">
-            <div class="progress" style="width: ${state.currentProgress}%"></div>
+            <div class="progress" style="width: ${state.currentProgressPercent}%"></div>
           </div>
           <span class="time-label">${song.formattedDuration}</span>
         </div>
@@ -1390,8 +1471,15 @@ class PlayerWidget {
     '''.toJS;
     
     player.querySelector('#btn-play')?.onClick.listen((_) {
-      state.isPlaying = !state.isPlaying;
-      state.notifyListeners();
+      state.togglePlayPause();
+    });
+
+    player.querySelector('#btn-next')?.onClick.listen((_) {
+      state.nextSong();
+    });
+
+    player.querySelector('#btn-prev')?.onClick.listen((_) {
+      state.prevSong();
     });
 
     player.querySelector('.player-like-btn')?.onClick.listen((_) {
@@ -1410,4 +1498,4 @@ class PlayerWidget {
 for rel_path, content in files.items():
     write_file(os.path.join(base_dir, rel_path), content)
 
-print("Updated Dart files with sidebar saved playlist click navigation successfully generated!")
+print("Updated Dart files with dynamic playback timers and live player controls generated successfully!")
