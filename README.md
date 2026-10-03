@@ -1,3 +1,11 @@
+<img width="1190" height="765" alt="Screenshot 2026-10-03 at 12 49 14 PM" src="https://github.com/user-attachments/assets/70b510a5-62b9-49bd-a2ff-4e36584d1206" />
+<img width="1181" height="754" alt="Screenshot 2026-10-03 at 12 49 37 PM" src="https://github.com/user-attachments/assets/509a9e7a-8d50-413f-97b5-083d1de8ba4b" />
+<img width="1186" height="752" alt="Screenshot 2026-10-03 at 12 49 53 PM" src="https://github.com/user-attachments/assets/f14db1c6-b403-455c-bc6d-ff020045dbe1" />
+<img width="1190" height="757" alt="Screenshot 2026-10-03 at 12 49 46 PM" src="https://github.com/user-attachments/assets/17a84578-195d-4484-a79f-676bcf75f813" />
+<img width="1200" height="770" alt="Screenshot 2026-10-03 at 12 50 01 PM" src="https://github.com/user-attachments/assets/f8bf7692-811d-42ae-ac45-47166b1c22a7" />
+<img width="1199" height="765" alt="Screenshot 2026-10-03 at 12 50 14 PM" src="https://github.com/user-attachments/assets/16102b11-b49d-48d5-9a6b-f53450f2fb45" />
+<img width="1190" height="761" alt="Screenshot 2026-10-03 at 12 50 21 PM" src="https://github.com/user-attachments/assets/2af524d2-6037-49bb-8c39-dcd09c54967f" />
+<img width="1190" height="761" alt="Screenshot 2026-10-03 at 12 50 21 PM" src="https://github.com/user-attachments/assets/4e396aa1-606c-4fcf-8c16-9c6e40dbcc74" /><img width="1199" height="765" alt="Screenshot 2026-10-03 at 12 50 14 PM" src="https://github.com/user-attachments/assets/a1f4ee0d-46f4-4122-8d68-00786bcffcbd" />![Uploading Screenshot 2026-10-03 at 12.50.43 PM.png…]()
 # 🎵 TuneRequest — Real-Time Community Music & Live Event Queue Platform
 
 A web application built using **100% Pure Dart for Web** (`package:web` and native DOM APIs).
